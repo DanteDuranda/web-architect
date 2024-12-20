@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebArchitect Editor</title>
+</head>
+<link rel="stylesheet" href="style/style.css">
+<body>
+<ul class="top-menubar">
+    <li>
+        <button id="planModeBt" class="button"><img class="button-image-planmode" src="res/pictures/plan_mode_.png" style="" alt="plan_mode"></button>
+    </li>
+    <li>
+        <button id="designModeBt" class="button"><img class="button-image-designmode" src="res/pictures/design_mode.png" style="" alt="plan_mode"></button>
+    </li>
+</ul>
+<canvas></canvas>
+<script type="importmap">
+    {
+        "imports": {
+            "three": "./three/build/three.module.js",
+            "OrbitControls": "./three/examples/jsm/controls/OrbitControls.js"
+        }
+    }
+</script>
+<script src="src/editor.js" type="module"></script>
+</body>
+</html>
