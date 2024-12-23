@@ -3,8 +3,10 @@ import { OrbitControls } from 'OrbitControls';
 
 const canvas = document.querySelector('canvas');
 
-let scene, cameraOrtho, cameraPersp, orbitControls, renderer, gridHelper;
+let scene, cameraOrtho, cameraPersp, orbitControls, renderer, gridHelperM, gridHelperDm, gridHelperCm;
 let planCursor;
+let distanceLabel;
+let lastZoomLevel = 1;
 let wallWidth = 0.2;
 let wallHeight = 2.1;
 let placedWalls = [];
@@ -30,9 +32,10 @@ function init() {
         1000                              // far
     );
 
-    cameraPersp = new THREE.PerspectiveCamera(90, aspectRatio, 1, 1000);
     cameraOrtho.position.set(0, 30, 0);
     cameraOrtho.lookAt(0, 0, 0);
+
+    cameraPersp = new THREE.PerspectiveCamera(90, aspectRatio, 1, 1000);
     cameraPersp.position.set(10, 10, 10);
     cameraPersp.lookAt(0, 0, 0);
 
@@ -40,21 +43,59 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio * 1.25);
 
-    gridHelper = new THREE.GridHelper(100, 100);
-    scene.add(gridHelper);
+    gridHelperM = new THREE.GridHelper(50, 50, 0x00FF00,0xFFFFFF);
+    scene.add(gridHelperM);
+    gridHelperM.position.y += 0.02;
 
+    gridHelperDm = new THREE.GridHelper(50, 500, 0x00FF00, 0x556677);
+    scene.add(gridHelperDm);
+    gridHelperDm.position.y += 0.01;
 
+    // gridHelperCm = new THREE.GridHelper(50, 5000, 0x00FF00, 0xFFFFFF);
+    // scene.add(gridHelperCm);
 
-    // Event listeners
+    planCursor = createPlanCursor();
+    activatePlanMode();
+
+    // event listeners
     window.addEventListener('resize', onWindowResize, false);
     document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
     document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
     document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
     document.getElementById("renderer").addEventListener("click", onMouseClick);
     document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
+    orbitControls.addEventListener("change", resizePlanCursor);
+}
 
-    planCursor = createPlanCursor();
-    activatePlanMode();
+
+function resizePlanCursor(){
+    console.log(`Zoom level: ${cameraOrtho.zoom}`);
+
+    const zoom = cameraOrtho.zoom;
+
+    if (cameraOrtho.isOrthographicCamera) {
+        if (lastZoomLevel <= zoom) {
+            // in
+            if (zoom > 9) {
+                planCursor.scale.setScalar(Math.max(0.1, planCursor.scale.x * 0.98));
+            } else if (zoom > 4) {
+                planCursor.scale.setScalar(Math.max(0.1, planCursor.scale.x * 0.97));
+            } else {
+                planCursor.scale.setScalar(1);
+            }
+        } else {
+            // out
+            if (zoom > 9) {
+                planCursor.scale.setScalar(Math.min(2, planCursor.scale.x * 1.03));
+            } else if (zoom > 4) {
+                planCursor.scale.setScalar(Math.min(2, planCursor.scale.x * 1.02));
+            } else {
+                planCursor.scale.setScalar(1);
+            }
+        }
+
+        lastZoomLevel = zoom;
+    }
 }
 
 
@@ -113,19 +154,19 @@ function onMouseMove(event) {
     }
 }
 
+
 function updateWallPlacementIndicator(event) { //TODO: nem oda illeszkedik a fuggoleges tengelyen ahova kene
     const gridIntersects = getGridIntersects(event);
     if (gridIntersects.length > 0) {
         const point = gridIntersects[0].point;
 
-        // Snap to grid logic
-        const gridSize = 1; // Define your grid size
+        // grid snap
+        const gridSize = 1;
         point.x = Math.round(point.x / gridSize) * gridSize;
         point.z = Math.round(point.z / gridSize) * gridSize;
-        point.y = 0; // Keep the circle on the ground
 
-        // Update the circle's position
-        planCursor.position.set(point.x, point.y, point.z);
+        // update circle position
+        planCursor.position.set(point.x, wallHeight, point.z);
     }
 }
 
@@ -157,6 +198,7 @@ function editorClick(event) {
             const wall = createWall(startPoint, point);
             scene.add(wall);
             placedWalls.push(wall);
+            distanceLabel = null;
             resetTempWall();
             isPlacingWall = false;
         }
@@ -175,7 +217,7 @@ function resetTempWall() {
 
 
 function editorMouseMove(event) {
-    if (!isPlacingWall){
+    if (!isPlacingWall) {
         return;
     }
 
@@ -183,15 +225,36 @@ function editorMouseMove(event) {
 
     if (intersects.length > 0) {
         const point = intersects[0].point;
-        point.y = 0; // placed at the grid height
+        point.y = 0; // grid height
         point.x = Math.round(point.x);
+
+        // calculate euclidean distance startPoint - actual point
+        const distance = startPoint ? startPoint.distanceTo(point) : 0;
 
         if (isPlacingWall) {
             if (!tempWallVisualizer) {
-                tempWallVisualizer = createWall(startPoint, point); // create a temporary wall
+                tempWallVisualizer = createWall(startPoint, point); // Create a temporary wall
                 scene.add(tempWallVisualizer);
+
+                if (!distanceLabel) {
+                    distanceLabel = createDistanceLabel();
+                    scene.add(distanceLabel.sprite);
+                }
             } else {
                 updateWall(tempWallVisualizer, startPoint, point);
+            }
+
+            if (distanceLabel) {
+                const { context, texture, sprite } = distanceLabel;
+
+                // update label
+                context.clearRect(0, 0, 256, 64);
+                context.fillText(`${distance.toFixed(2)} m`, 128, 32); // center text
+                // TODO: 0,00 kiirasra kerul
+                texture.needsUpdate = true;
+
+                // position to the cursor
+                sprite.position.set(tempWallVisualizer.position.x, wallHeight + 1, tempWallVisualizer.position.z);
             }
         }
     }
@@ -229,7 +292,7 @@ function getGridIntersects(event) {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
 
-    return raycaster.intersectObject(gridHelper);
+    return raycaster.intersectObject(gridHelperM);
 }
 
 
@@ -241,6 +304,7 @@ function createPlanCursor(radius = 0.2, crossThickness = 0.03, crossLengthFactor
     const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
     const planCursor = new THREE.Mesh(circleGeometry, circleMaterial);
     planCursor.rotation.x = -Math.PI / 2; // Align with XZ plane
+    planCursor.position.y += 1;
     // cross
     const crossLength = radius * crossLengthFactor; // Cross line length
     // horizontal line
@@ -259,6 +323,27 @@ function createPlanCursor(radius = 0.2, crossThickness = 0.03, crossLengthFactor
     cursorGroup.add(verticalLine);
 
     return cursorGroup;
+}
+
+
+function createDistanceLabel() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+
+    const context = canvas.getContext('2d');
+    context.font = '24px Arial';
+    context.fillStyle = 'white';
+    context.textAlign = 'center';
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    context.fillText('0.0 m', canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(4, 1, 4); // Adjust scale based on your scene
+    return { sprite, canvas, context, texture };
 }
 
 
