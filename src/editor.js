@@ -3,10 +3,12 @@ import { OrbitControls } from 'OrbitControls';
 
 const canvas = document.querySelector('canvas');
 
-let scene, cameraOrtho, cameraPersp, orbitControls, renderer, gridHelperM, gridHelperDm, gridHelperCm;
+let scene, renderer, gridHelperM, gridHelperDm, gridHelperCm;
+let cameraOrtho, cameraPersp, orbControlOrtho, orbControlPersp;
+const minZoom = 1;
+const maxZoom = 100;
 let planCursor;
 let distanceLabel;
-let lastZoomLevel = 1;
 let wallWidth = 0.2;
 let wallHeight = 2.1;
 let placedWalls = [];
@@ -43,6 +45,11 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio * 1.25);
 
+    orbControlOrtho = new OrbitControls(cameraOrtho, renderer.domElement);
+    orbControlOrtho.enableRotate = false;
+
+    orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
+
     gridHelperM = new THREE.GridHelper(50, 50, 0x00FF00,0xFFFFFF);
     scene.add(gridHelperM);
     gridHelperM.position.y += 0.02;
@@ -61,82 +68,64 @@ function init() {
     window.addEventListener('resize', onWindowResize, false);
     document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
     document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
-    document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
     document.getElementById("renderer").addEventListener("click", onMouseClick);
     document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
-    orbitControls.addEventListener("change", resizePlanCursor);
+    orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
+}
+
+function manageZoomInPlanMode() {
+    clampZoom();
+    resizeCursor();
+}
+
+function clampZoom() {
+    cameraOrtho.zoom = Math.max(minZoom, Math.min(cameraOrtho.zoom, maxZoom));
+
+    cameraOrtho.updateProjectionMatrix();
 }
 
 
-function resizePlanCursor(){
-    console.log(`Zoom level: ${cameraOrtho.zoom}`);
-
+function resizeCursor() {
     const zoom = cameraOrtho.zoom;
 
-    if (cameraOrtho.isOrthographicCamera) {
-        if (lastZoomLevel <= zoom) {
-            // in
-            if (zoom > 9) {
-                planCursor.scale.setScalar(Math.max(0.1, planCursor.scale.x * 0.98));
-            } else if (zoom > 4) {
-                planCursor.scale.setScalar(Math.max(0.1, planCursor.scale.x * 0.97));
-            } else {
-                planCursor.scale.setScalar(1);
-            }
-        } else {
-            // out
-            if (zoom > 9) {
-                planCursor.scale.setScalar(Math.min(2, planCursor.scale.x * 1.03));
-            } else if (zoom > 4) {
-                planCursor.scale.setScalar(Math.min(2, planCursor.scale.x * 1.02));
-            } else {
-                planCursor.scale.setScalar(1);
-            }
-        }
-
-        lastZoomLevel = zoom;
+    let cursorScale;
+    if (zoom >= minZoom && zoom < 5) {
+        cursorScale = 1;
+    } else if (zoom >= 5 && zoom < 20) {
+        cursorScale = 0.5;
+    } else if (zoom >= 20 && zoom < 30) {
+        cursorScale = 0.2;
+    } else if (zoom >= 30 && zoom < 40) {
+        cursorScale = 0.1;
+    } else if (zoom >= 40) {
+        cursorScale = 0.02;
     }
+
+    planCursor.scale.setScalar(cursorScale);
+
+    //console.log(`Cursor Scale: ${planCursor.scale.x}, Zoom Level: ${zoom}`);
 }
 
 
 function activatePlanMode() {
-    switchToOrthoCam();
     scene.add(planCursor);
     canvas.style.cursor = 'none';
+
+    orbControlOrtho.enabled = true;
+    orbControlPersp.enabled = false;
 
     isPlanModeActive = true;
 }
 
 
 function activateDesignMode() {
-    switchToPerspCam();
     scene.remove(planCursor);
     canvas.style.cursor = 'default';
 
+    orbControlOrtho.enabled = false;
+    orbControlPersp.enabled = true;
+
     isPlanModeActive = false;
-}
-
-
-function switchToOrthoCam() {
-    if (!isPlanModeActive) {
-        if (typeof orbitControls !== 'undefined') {
-            orbitControls.dispose();
-        }
-        orbitControls = new OrbitControls(cameraOrtho, renderer.domElement);
-        orbitControls.enableRotate = false;
-        console.log('Switched to Orthographic Camera - Plan Mode');
-    }
-}
-
-
-function switchToPerspCam() {
-    if (isPlanModeActive) {
-        if (typeof orbitControls !== 'undefined' && orbitControls) {
-            orbitControls.dispose();
-        }
-        orbitControls = new OrbitControls(cameraPersp, renderer.domElement);
-        console.log('Switched to Perspective Camera - Design Mode');
-    }
 }
 
 
@@ -296,7 +285,7 @@ function getGridIntersects(event) {
 }
 
 
-function createPlanCursor(radius = 0.2, crossThickness = 0.03, crossLengthFactor = 15) {
+function createPlanCursor(radius = 0.2, crossThickness = 0.05, crossLengthFactor = 10) {
     const segments = 20; // Number of segments for the circle
 
     // center circle
@@ -306,7 +295,7 @@ function createPlanCursor(radius = 0.2, crossThickness = 0.03, crossLengthFactor
     planCursor.rotation.x = -Math.PI / 2; // Align with XZ plane
     planCursor.position.y += 1;
     // cross
-    const crossLength = radius * crossLengthFactor; // Cross line length
+    const crossLength = radius * crossLengthFactor; // cross line length
     // horizontal line
     const horizontalGeometry = new THREE.BoxGeometry(crossLength, crossThickness, crossThickness);
     const horizontalMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
