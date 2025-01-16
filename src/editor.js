@@ -284,6 +284,12 @@ function createWall(start, end) {
 }
 
 
+function addWallProperties(wall, start, end) {  // TODO: bekötni
+    wall.position.set((start.x + end.x) / 2, wallHeight/2, (start.z + end.z) / 2);
+    wall.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
+}
+
+
 function getGridIntersects(event) {
     const mouse = new THREE.Vector2();
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -292,7 +298,7 @@ function getGridIntersects(event) {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
 
-    return raycaster.intersectObject(gridHelperM);
+    return raycaster.intersectObject(gridHelperM); // TODO: mértékenységekre szabás
 }
 
 
