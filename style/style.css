@@ -18,6 +18,47 @@ li {
     z-index: 10; /* Higher value to appear on top of the canvas */
 }
 
+
+.sidebar {
+    position: absolute;
+    top: 58px; /* Place it directly under the menubar */
+    left: -20%; /* Hidden off-screen */
+    width: 20%; /* 1/5th of the screen width */
+    height: calc(100vh - 58px); /* Full height minus menubar height */
+    background-color: rgba(44, 44, 44, 0.8); /* Match the menubar's color */
+    z-index: 5; /* Ensure it appears above the canvas but below the menubar */
+    transition: left 0.5s ease; /* Smooth transition for horizontal movement */
+}
+
+.sidebar.visible {
+    left: 0;
+}
+
+.sidebar.hidden {
+    left: -20%;
+}
+
+/* Sidebar toggle button */
+.show-sidebar-button {
+    margin-top: 25%;
+    margin-left: 20%;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(44, 44, 44, 1);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 15;
+    transition: background-color 0.3s ease;
+}
+
+.show-sidebar-button:hover {
+    background-color: rgba(143, 140, 140, 0.4); /* Same color as menubar */
+}
+
+
 canvas {
     display: block;
     position: absolute;
@@ -25,7 +66,7 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%; /* Cover the entire viewport */
-    z-index: 1; /* Lower value to appear behind the menu */
+    z-index: 1; /* Lower value to appear behind the menu and sidebar */
 }
 
 .button {

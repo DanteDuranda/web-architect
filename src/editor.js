@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
+import { PlanCursor, PlanSideBar } from "./planMode.js";
 
 const canvas = document.querySelector('canvas');
 
@@ -7,6 +8,8 @@ let scene, renderer, gridHelperM, gridHelperDm, gridHelperCm;
 let cameraOrtho, cameraPersp, orbControlOrtho, orbControlPersp;
 const minZoom = 1;
 const maxZoom = 100;
+const sideBar = document.querySelector(".sideBar");
+const planSideBar = new PlanSideBar(sideBar);
 let planCursor;
 let distanceLabel;
 let wallWidth = 0.2;
@@ -61,7 +64,7 @@ function init() {
     // gridHelperCm = new THREE.GridHelper(50, 5000, 0x00FF00, 0xFFFFFF);
     // scene.add(gridHelperCm);
 
-    planCursor = createPlanCursor();
+    planCursor = new PlanCursor();
     activatePlanMode();
 
     // event listeners
@@ -70,13 +73,29 @@ function init() {
     document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
     document.getElementById("renderer").addEventListener("click", onMouseClick);
     document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
+    document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.querySelector(".sideBar");
+        const showSidebarBt = document.getElementById("showSidebarBt");
+
+        showSidebarBt.addEventListener("click", () => {
+            if (sidebar.classList.contains("visible")) {
+                sidebar.classList.remove("visible");
+                sidebar.classList.add("hidden");
+            } else {
+                sidebar.classList.remove("hidden");
+                sidebar.classList.add("visible");
+            }
+        });
+    });
     orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 }
 
+
 function manageZoomInPlanMode() {
     clampZoom();
-    resizeCursor();
+    planCursor.resizeCursor(cameraOrtho.zoom);
 }
+
 
 function clampZoom() {
     cameraOrtho.zoom = Math.max(minZoom, Math.min(cameraOrtho.zoom, maxZoom));
@@ -85,30 +104,8 @@ function clampZoom() {
 }
 
 
-function resizeCursor() {
-    const zoom = cameraOrtho.zoom;
-
-    let cursorScale;
-    if (zoom >= minZoom && zoom < 5) {
-        cursorScale = 1;
-    } else if (zoom >= 5 && zoom < 20) {
-        cursorScale = 0.5;
-    } else if (zoom >= 20 && zoom < 30) {
-        cursorScale = 0.2;
-    } else if (zoom >= 30 && zoom < 40) {
-        cursorScale = 0.1;
-    } else if (zoom >= 40) {
-        cursorScale = 0.02;
-    }
-
-    planCursor.scale.setScalar(cursorScale);
-
-    //console.log(`Cursor Scale: ${planCursor.scale.x}, Zoom Level: ${zoom}`);
-}
-
-
 function activatePlanMode() {
-    scene.add(planCursor);
+    scene.add(planCursor.cursorGroup); // Correct
     canvas.style.cursor = 'none';
 
     orbControlOrtho.enabled = true;
@@ -119,7 +116,7 @@ function activatePlanMode() {
 
 
 function activateDesignMode() {
-    scene.remove(planCursor);
+    scene.remove(planCursor.cursorGroup);
     canvas.style.cursor = 'default';
 
     orbControlOrtho.enabled = false;
@@ -155,7 +152,7 @@ function updateWallPlacementIndicator(event) { //TODO: nem oda illeszkedik a fug
         point.z = Math.round(point.z / gridSize) * gridSize;
 
         // update circle position
-        planCursor.position.set(point.x, wallHeight, point.z);
+        planCursor.cursorGroup.position.set(point.x, wallHeight, point.z);
     }
 }
 
@@ -291,36 +288,6 @@ function getGridIntersects(event) {
 }
 
 
-function createPlanCursor(radius = 0.2, crossThickness = 0.05, crossLengthFactor = 10) {
-    const segments = 20; // Number of segments for the circle
-
-    // center circle
-    const circleGeometry = new THREE.CircleGeometry(radius, segments);
-    const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-    const planCursor = new THREE.Mesh(circleGeometry, circleMaterial);
-    planCursor.rotation.x = -Math.PI / 2; // Align with XZ plane
-    planCursor.position.y += 1;
-    // cross
-    const crossLength = radius * crossLengthFactor; // cross line length
-    // horizontal line
-    const horizontalGeometry = new THREE.BoxGeometry(crossLength, crossThickness, crossThickness);
-    const horizontalMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
-    const horizontalLine = new THREE.Mesh(horizontalGeometry, horizontalMaterial);
-    // vertical line
-    const verticalGeometry = new THREE.BoxGeometry(crossThickness, crossLength, crossThickness);
-    const verticalMaterial = new THREE.MeshBasicMaterial({ color: 0x0000FF });
-    const verticalLine = new THREE.Mesh(verticalGeometry, verticalMaterial);
-    verticalLine.rotation.x = -Math.PI / 2;
-
-    const cursorGroup = new THREE.Group();
-    cursorGroup.add(planCursor);
-    cursorGroup.add(horizontalLine);
-    cursorGroup.add(verticalLine);
-
-    return cursorGroup;
-}
-
-
 function createDistanceLabel() {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
@@ -362,3 +329,5 @@ function animate() {
         renderer.render(scene, cameraPersp);
     }
 }
+
+
