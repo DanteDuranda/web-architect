@@ -71,8 +71,24 @@ export class PlanCursor {
     }
 }
 
-export class PlanSideBar {
-    constructor(sidebar) {
+export class SideBar {
+    constructor() {
+        this.sideBar = document.querySelector(".sideBar");
+    }
 
+    updateSidebar(isPlanModeActive) {
+        if (isPlanModeActive) {
+            this.sideBar.innerHTML = `
+                <h3>Plan Mode</h3>
+                <button onclick="startPlacingWall()">Start Placing Wall</button>
+                <p>Current Mode: Plan Mode</p>
+            `;
+        } else if (!isPlanModeActive) {
+            this.sideBar.innerHTML = `
+                <h3>Design Mode</h3>
+                <button onclick="startDesign()">Start Design</button>
+                <p>Current Mode: Design Mode</p>
+            `;
+        }
     }
 }

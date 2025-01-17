@@ -19,7 +19,7 @@ li {
 }
 
 
-.sidebar {
+.sideBar {
     position: absolute;
     top: 58px; /* Place it directly under the menubar */
     left: -20%; /* Hidden off-screen */
@@ -30,11 +30,11 @@ li {
     transition: left 0.5s ease; /* Smooth transition for horizontal movement */
 }
 
-.sidebar.visible {
+.sideBar.visible {
     left: 0;
 }
 
-.sidebar.hidden {
+.sideBar.hidden {
     left: -20%;
 }
 

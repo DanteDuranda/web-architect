@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
-import { PlanCursor, PlanSideBar } from "./planMode.js";
+import { PlanCursor, SideBar } from "./planMode.js";
 
 const canvas = document.querySelector('canvas');
 
@@ -8,8 +8,7 @@ let scene, renderer, gridHelperM, gridHelperDm, gridHelperCm;
 let cameraOrtho, cameraPersp, orbControlOrtho, orbControlPersp;
 const minZoom = 1;
 const maxZoom = 100;
-const sideBar = document.querySelector(".sideBar");
-const planSideBar = new PlanSideBar(sideBar);
+let sideBar;
 let planCursor;
 let distanceLabel;
 let wallWidth = 0.2;
@@ -26,6 +25,8 @@ init();
 animate();
 
 function init() {
+    sideBar = new SideBar();
+
     scene = new THREE.Scene();
 
     cameraOrtho = new THREE.OrthographicCamera(
@@ -74,19 +75,26 @@ function init() {
     document.getElementById("renderer").addEventListener("click", onMouseClick);
     document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
     document.addEventListener("DOMContentLoaded", () => {
-        const sidebar = document.querySelector(".sideBar");
+        // Initialize sideBar after DOM is fully loaded
+        const sideBar = document.querySelector(".sideBar");
         const showSidebarBt = document.getElementById("showSidebarBt");
 
+        if (!sideBar || !showSidebarBt) {
+            console.error("Sidebar or button not found!");
+            return;
+        }
+
         showSidebarBt.addEventListener("click", () => {
-            if (sidebar.classList.contains("visible")) {
-                sidebar.classList.remove("visible");
-                sidebar.classList.add("hidden");
+            if (sideBar.classList.contains("visible")) {
+                sideBar.classList.remove("visible");
+                sideBar.classList.add("hidden");
             } else {
-                sidebar.classList.remove("hidden");
-                sidebar.classList.add("visible");
+                sideBar.classList.remove("hidden");
+                sideBar.classList.add("visible");
             }
         });
     });
+
     orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 }
 
@@ -112,6 +120,8 @@ function activatePlanMode() {
     orbControlPersp.enabled = false;
 
     isPlanModeActive = true;
+
+    sideBar.updateSidebar(isPlanModeActive);
 }
 
 
@@ -123,6 +133,8 @@ function activateDesignMode() {
     orbControlPersp.enabled = true;
 
     isPlanModeActive = false;
+
+    sideBar.updateSidebar(isPlanModeActive);
 }
 
 
