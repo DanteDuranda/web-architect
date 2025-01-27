@@ -19,22 +19,22 @@ li {
 }
 
 
-.sideBar {
+.side-bar {
     position: absolute;
     top: 58px; /* Place it directly under the menubar */
     left: -20%; /* Hidden off-screen */
     width: 20%; /* 1/5th of the screen width */
     height: calc(100vh - 58px); /* Full height minus menubar height */
-    background-color: rgba(44, 44, 44, 0.8); /* Match the menubar's color */
+    background-color: rgba(255, 251, 233, 0.84); /* Match the menubar's color */
     z-index: 5; /* Ensure it appears above the canvas but below the menubar */
     transition: left 0.5s ease; /* Smooth transition for horizontal movement */
 }
 
-.sideBar.visible {
+.side-bar.visible {
     left: 0;
 }
 
-.sideBar.hidden {
+.side-bar.hidden {
     left: -20%;
 }
 
@@ -113,3 +113,9 @@ canvas {
 .button-image-designmode:hover {
     transform: scale(1.3);
 }
+
+
+
+
+
+

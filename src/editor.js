@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
-import { PlanCursor, SideBar } from "./planMode.js";
+import { PlanCursor } from "./planMode.js";
+import { SideBar } from "./UiControl.js";
 
 const canvas = document.querySelector('canvas');
 
@@ -76,10 +77,10 @@ function init() {
     document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
     document.addEventListener("DOMContentLoaded", () => {
         // Initialize sideBar after DOM is fully loaded
-        const sideBar = document.querySelector(".sideBar");
+        const sideBar = document.querySelector(".side-bar");
         const showSidebarBt = document.getElementById("showSidebarBt");
 
-        if (!sideBar || !showSidebarBt) {
+        if (!sideBar || !showSidebarBt) { // TODO for debug only
             console.error("Sidebar or button not found!");
             return;
         }
