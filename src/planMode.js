@@ -60,14 +60,7 @@ export class PlanCursor {
 
         // Update scale of cursor group
         this.cursorGroup.scale.setScalar(cursorScale);
-
-        // Optional: debug log to track cursor scaling
-        // console.log(`Cursor Scale: ${this.cursorGroup.scale.x}, Zoom Level: ${zoom}`);
-    }
-
-    // Call this function to update the cursor's scale based on camera's zoom level
-    updateCursorScale() {
-        this.resizeCursor(this.zoom);
+        // console.log(`cursor Scale: ${this.cursorGroup.scale.x}, zom Level: ${zoom}`);
     }
 }
 

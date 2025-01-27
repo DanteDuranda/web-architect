@@ -12,8 +12,6 @@ const maxZoom = 100;
 let sideBar;
 let planCursor;
 let distanceLabel;
-let wallWidth = 0.2;
-let wallHeight = 2.1;
 let placedWalls = [];
 let isPlacingWall = false;
 let startPoint = new THREE.Vector3(); // starting point of wall placing
@@ -29,6 +27,7 @@ function init() {
     sideBar = new SideBar();
 
     scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x4A4848);
 
     cameraOrtho = new THREE.OrthographicCamera(
         nonCullingLimit * aspectRatio / -2,    // left
@@ -75,41 +74,7 @@ function init() {
     document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
     document.getElementById("renderer").addEventListener("click", onMouseClick);
     document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
-    document.addEventListener("DOMContentLoaded", () => {
-        // Initialize sideBar after DOM is fully loaded
-        const sideBar = document.querySelector(".side-bar");
-        const showSidebarBt = document.getElementById("showSidebarBt");
-
-        if (!sideBar || !showSidebarBt) { // TODO for debug only
-            console.error("Sidebar or button not found!");
-            return;
-        }
-
-        showSidebarBt.addEventListener("click", () => {
-            if (sideBar.classList.contains("visible")) {
-                sideBar.classList.remove("visible");
-                sideBar.classList.add("hidden");
-            } else {
-                sideBar.classList.remove("hidden");
-                sideBar.classList.add("visible");
-            }
-        });
-    });
-
     orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
-}
-
-
-function manageZoomInPlanMode() {
-    clampZoom();
-    planCursor.resizeCursor(cameraOrtho.zoom);
-}
-
-
-function clampZoom() {
-    cameraOrtho.zoom = Math.max(minZoom, Math.min(cameraOrtho.zoom, maxZoom));
-
-    cameraOrtho.updateProjectionMatrix();
 }
 
 
@@ -165,7 +130,7 @@ function updateWallPlacementIndicator(event) { //TODO: nem oda illeszkedik a fug
         point.z = Math.round(point.z / gridSize) * gridSize;
 
         // update circle position
-        planCursor.cursorGroup.position.set(point.x, wallHeight, point.z);
+        planCursor.cursorGroup.position.set(point.x, sideBar.wallHeight, point.z);
     }
 }
 
@@ -253,7 +218,7 @@ function editorMouseMove(event) {
                 texture.needsUpdate = true;
 
                 // position to the cursor
-                sprite.position.set(tempWallVisualizer.position.x, wallHeight + 1, tempWallVisualizer.position.z);
+                sprite.position.set(tempWallVisualizer.position.x, sideBar.wallHeight + 1, tempWallVisualizer.position.z);
             }
         }
     }
@@ -263,20 +228,20 @@ function editorMouseMove(event) {
 function updateWall(wall, start, end) {
     const wallLength = start.distanceTo(end);
     wall.geometry.dispose();
-    wall.geometry = new THREE.BoxGeometry(wallLength, wallHeight, wallWidth);
+    wall.geometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
 
-    wall.position.set((start.x + end.x) / 2, wallHeight / 2, (start.z + end.z) / 2);
+    wall.position.set((start.x + end.x) / 2, sideBar.wallHeight / 2, (start.z + end.z) / 2);
     wall.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
 }
 
 
 function createWall(start, end) {
     const wallLength = start.distanceTo(end);
-    const wallGeometry = new THREE.BoxGeometry(wallLength, wallHeight, wallWidth);
+    const wallGeometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
     const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x999900 });
     const wall = new THREE.Mesh(wallGeometry, wallMaterial);
 
-    wall.position.set((start.x + end.x) / 2, wallHeight/2, (start.z + end.z) / 2);
+    wall.position.set((start.x + end.x) / 2, sideBar.wallHeight/2, (start.z + end.z) / 2);
     wall.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
 
     return wall;
@@ -284,7 +249,7 @@ function createWall(start, end) {
 
 
 function addWallProperties(wall, start, end) {  // TODO: bekötni
-    wall.position.set((start.x + end.x) / 2, wallHeight/2, (start.z + end.z) / 2);
+    wall.position.set((start.x + end.x) / 2, sideBar.wallHeight/2, (start.z + end.z) / 2);
     wall.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
 }
 
@@ -322,6 +287,18 @@ function createDistanceLabel() {
 }
 
 
+function manageZoomInPlanMode() {
+    clampZoom();
+    planCursor.resizeCursor(cameraOrtho.zoom);
+}
+
+
+function clampZoom() {
+    cameraOrtho.zoom = Math.max(minZoom, Math.min(cameraOrtho.zoom, maxZoom));
+    cameraOrtho.updateProjectionMatrix();
+}
+
+
 function onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
     cameraOrtho.left = -50 * aspect / 2;
@@ -333,6 +310,7 @@ function onWindowResize() {
     cameraPersp.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
 
 function animate() {
     requestAnimationFrame(animate);

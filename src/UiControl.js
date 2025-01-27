@@ -1,70 +1,60 @@
 export class SideBar {
+    #widthInput;
+    #heightInput;
+
     constructor() {
         this.sideBar = document.querySelector(".side-bar");
+        this.wallHeight = 2.1;
+        this.wallWidth = 0.2;
+
+
+        this.#heightInput = null;
+
+        document.getElementById("showSidebarBt").addEventListener("click", this.toggleSideBar);
+    }
+
+    toggleSideBar() {
+        const sideBar = document.querySelector(".side-bar");
+
+        if (sideBar.classList.contains("visible")) {
+            sideBar.classList.remove("visible");
+            sideBar.classList.add("hidden");
+        } else {
+            sideBar.classList.remove("hidden");
+            sideBar.classList.add("visible");
+        }
     }
 
     updateSidebar(isPlanModeActive) {
-        if (isPlanModeActive) {
-            this.sideBar.innerHTML = `
-            <h3 style="font-family:sans-serif;">Plan mode</h3>
-            <h4 style="margin: 0; font-family:sans-serif;">Wall builder</h4>
-            <div style="border: 2px solid black; padding: 10px; margin-bottom: 5px; margin-left: 5px; margin-right: 10px">
-                <div style="margin-top: 10px;">
-                    <label for="width" style="font-family:sans-serif;">Width:</label>
-                    <input 
-                        type="number" 
-                        id="width" 
-                        style="
-                            width: 60px; 
-                            margin-left: 5px; 
-                            padding: 5px; 
-                            border: 1px solid gray;
-                        " 
-                        placeholder="0">
-                </div>
-                <div style="margin-top: 10px;">
-                    <label for="height" style="font-family:sans-serif;">Height:</label>
-                    <input 
-                        type="number" 
-                        id="height" 
-                        style="
-                            width: 60px; 
-                            margin-left: 5px; 
-                            padding: 5px; 
-                            border: 1px solid gray;
-                        " 
-                        placeholder="0">
-                </div>
-            </div>
-            <h4 style="margin: 0; font-family:sans-serif;">Grid Settings</h4>
-            <div style="border: 2px solid black; padding: 10px; margin-left: 5px; margin-right: 5px">
-                <div style="display: flex; align-items: center; margin-top: 10px;">
-                    <div>
-                        <label>
-                            <input type="checkbox" id="m" style="margin-right: 5px;"> m
-                        </label>
-                        <br>
-                        <label>
-                            <input type="checkbox" id="dm" style="margin-right: 5px;"> cm
-                        </label>
-                        <br>
-                        <label>
-                            <input type="checkbox" id="cm" style="margin-right: 5px;"> cm
-                        </label>
-                    </div>
-                    <div style="margin-left: 20px;">
-                        <label>
-                            <input type="checkbox" id="snapToGrid" style="margin-right: 5px;"> Snap to Grid
-                        </label>
-                        <br>
-                        <label>
-                            <input type="checkbox" id="snapToWall" style="margin-right: 5px;"> Snap to Wall
-                        </label>
-                    </div>
-                </div>
-            </div>
-        `;
-        } else if (!isPlanModeActive) {
+        if (isPlanModeActive) {          // PlanMode
+            fetch('style/component/sidebar-plan.html')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    this.sideBar.innerHTML = data;
+
+                    this.#updateWallInputFields();
+
+                    this.#widthInput.addEventListener("input", () => this.setWidth(this.#widthInput.value));
+                    this.#heightInput.addEventListener("input", () => this.setHeight(this.#heightInput.value));
+
+                    if (this.#widthInput) {
+                        this.#widthInput.value = this.wallWidth;
+                    }
+                    if (this.#heightInput) {
+                        this.#heightInput.value = this.wallHeight;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching component file:', err);
+                });
+
+
+        } else if (!isPlanModeActive) { // DesignMode
             this.sideBar.innerHTML = `
                 <h3>Design Mode</h3>
                 <button onclick="startDesign()">Start Design</button>
@@ -72,16 +62,17 @@ export class SideBar {
             `;
         }
     }
-}
 
+    setWidth(width) {
+        this.wallWidth = width;
+    }
 
-function toggleActivate() {
-    const button = document.getElementById('activateToggle');
-    if (button.textContent === 'Activate') {
-        button.textContent = 'Deactivate';
-        button.style.backgroundColor = 'lightgreen';
-    } else {
-        button.textContent = 'Activate';
-        button.style.backgroundColor = 'lightgray';
+    setHeight(height) {
+        this.wallHeight = height;
+    }
+
+    #updateWallInputFields() {
+        this.#widthInput = document.getElementById('width');
+        this.#heightInput = document.getElementById('height');
     }
 }
