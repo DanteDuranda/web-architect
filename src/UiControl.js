@@ -53,7 +53,6 @@ export class SideBar {
 
             this.#designModeContent = await designResponse.text();
 
-            console.log(this.#planModeContent);
         } catch (err) {
             console.error('Error loading sidebar content:', err);
         }

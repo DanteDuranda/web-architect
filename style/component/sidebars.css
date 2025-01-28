@@ -6,23 +6,23 @@ body {
 
 .heading {
     font-family: sans-serif;
+    margin-left: 2%;
 }
 
 .subheading {
-    margin: 0;
+    margin: 10% 0 0 5%;
     font-family: sans-serif;
 }
 
 .box {
     border: 2px #422800 dashed;
     padding: 10px;
-    margin-bottom: 5px;
-    margin-left: 5px;
-    margin-right: 10px;
+    margin: -0.5% 10px 5px 10px;
+    /*width: fit-content;*/
 }
 
 .input-group {
-    margin-top: 10px;
+    margin-top: 5px;
 }
 
 .label {
@@ -30,10 +30,11 @@ body {
 }
 
 .input {
-    width: 60px;
+    width: 50px;
     margin-left: 5px;
     padding: 5px;
-    border: 1px solid gray;
+    border: 2px solid #422800;
+    box-shadow: #422800 2px 2px 0 0;
 }
 
 .grid-settings {
@@ -44,6 +45,8 @@ body {
 
 .checkbox {
     margin-right: 5px;
+    border: 2px solid #422800;
+    box-shadow: #422800 2px 2px 0 0;
 }
 
 .grid-options {
@@ -80,9 +83,8 @@ body {
 }
 
 .toggle-wall-draw-button.active {
-    background-color: #422800;
-    color: #fbeee0;
-    box-shadow: none;
+    background-color: #fbeee0;
+    box-shadow: #422800 1px 1px 0 0;
     transform: translate(2px, 2px);
 }
 
