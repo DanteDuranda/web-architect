@@ -1,0 +1,94 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.heading {
+    font-family: sans-serif;
+}
+
+.subheading {
+    margin: 0;
+    font-family: sans-serif;
+}
+
+.box {
+    border: 2px #422800 dashed;
+    padding: 10px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    margin-right: 10px;
+}
+
+.input-group {
+    margin-top: 10px;
+}
+
+.label {
+    font-family: sans-serif;
+}
+
+.input {
+    width: 60px;
+    margin-left: 5px;
+    padding: 5px;
+    border: 1px solid gray;
+}
+
+.grid-settings {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.checkbox {
+    margin-right: 5px;
+}
+
+.grid-options {
+    margin-left: 20px;
+}
+
+/*https://getcssscan.com/css-buttons-examples button 74*/
+.toggle-wall-draw-button {
+    background-color: #fbeee0;
+    border: 2px solid #422800;
+    border-radius: 5px;
+    box-shadow: #422800 4px 4px 0 0;
+    color: #422800;
+    cursor: pointer;
+    display: inline-block;
+    font-weight: 600;
+    font-size: 18px;
+    padding: 0 14px;
+    line-height: 50px;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.toggle-wall-draw-button:hover {
+    background-color: #fff;
+}
+
+.toggle-wall-draw-button:active {
+    box-shadow: #422800 1px 1px 0 0;
+    transform: translate(2px, 2px);
+}
+
+.toggle-wall-draw-button.active {
+    background-color: #422800;
+    color: #fbeee0;
+    box-shadow: none;
+    transform: translate(2px, 2px);
+}
+
+@media (min-width: 768px) {
+    .toggle-wall-draw-button {
+        min-width: 120px;
+        padding: 0 25px;
+    }
+}
