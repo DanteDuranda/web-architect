@@ -62,7 +62,7 @@ function init() {
     scene.add(gridHelperDm);
     gridHelperDm.position.y += 0.01;
 
-    // gridHelperCm = new THREE.GridHelper(50, 5000, 0x00FF00, 0xFFFFFF);
+    gridHelperCm = new THREE.GridHelper(50, 5000, 0x00FF00, 0xFFFFFF);
     // scene.add(gridHelperCm);
 
     planCursor = new PlanCursor();
@@ -120,7 +120,7 @@ function onMouseMove(event) {
 
 
 function updateWallPlacementIndicator(event) { //TODO: nem oda illeszkedik a fuggoleges tengelyen ahova kene
-    const gridIntersects = getGridIntersects(event);
+    const gridIntersects = getIntersects(event, gridHelperM);
     if (gridIntersects.length > 0) {
         const point = gridIntersects[0].point;
 
@@ -136,19 +136,12 @@ function updateWallPlacementIndicator(event) { //TODO: nem oda illeszkedik a fug
 
 
 function editorClick(event) {
-    const mouse = new THREE.Vector2();
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    ///const intersects = getIntersects(event, placedWalls);
 
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
-
-    const intersects = raycaster.intersectObjects(placedWalls);
-
-    if (intersects.length > 0) {
-        console.log("Wall selected:", intersects[0].object);
-    } //else { // TODO: ezt atvarialni
-    const gridIntersects = getGridIntersects(event);
+    ///if (intersects.length > 0) {
+        ///console.log("Wall selected:", intersects[0].object);
+    ///} //else { // TODO: ezt atvarialni
+    const gridIntersects = getIntersects(event, gridHelperM);
     if (gridIntersects.length > 0) {
         const point = gridIntersects[0].point;
         point.y = 0;
@@ -185,7 +178,7 @@ function editorMouseMove(event) {
         return;
     }
 
-    const intersects = getGridIntersects(event);
+    const intersects = getIntersects(event, gridHelperM);
 
     if (intersects.length > 0) {
         const point = intersects[0].point;
@@ -254,15 +247,20 @@ function addWallProperties(wall, start, end) {  // TODO: bekötni
 }
 
 
-function getGridIntersects(event) {
-    const mouse = new THREE.Vector2();
+function getIntersects(event, searchObject=null) {
+    let mouse = new THREE.Vector2();
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / (window.innerHeight+5)) * 2 + 1;
 
-    const raycaster = new THREE.Raycaster();
+    let raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
 
-    return raycaster.intersectObject(gridHelperM); // TODO: mértékenységekre szabás
+    if (searchObject === null) {
+        return raycaster.intersect();
+    }
+
+    return raycaster.intersectObject(searchObject);
+     // TODO: mértékenységekre szabás
 }
 
 
@@ -290,6 +288,11 @@ function createDistanceLabel() {
 function manageZoomInPlanMode() {
     clampZoom();
     planCursor.resizeCursor(cameraOrtho.zoom);
+    if (cameraOrtho.zoom >= 40) {
+        scene.add(gridHelperCm);
+    } else {
+        scene.remove(gridHelperCm);
+    }
 }
 
 
