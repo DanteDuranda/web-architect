@@ -100,13 +100,13 @@ export class SideBar {
     }
 
     #updateWallInputFields() {
-        // Retrieve references to the wall input fields
+        // retrieve references to the wall input fields
         this.#widthInput = document.getElementById('width');
         this.#heightInput = document.getElementById('height');
     }
 
     #toggleWallDrawHandler(event) {
-        // Toggle the active state of the button and update internal state
+        // toggle the active state of the button and update internal state
         event.target.classList.toggle('active');
         this.#isWallPlacingActive = event.target.classList.contains('active');
     }

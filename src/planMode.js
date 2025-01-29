@@ -20,21 +20,21 @@ export class PlanCursor {
         planCursor.rotation.x = -Math.PI / 2; // Align with XZ plane
         planCursor.position.y += 1;
 
-        // Cross lines
+        // cross lines
         const crossLength = this.radius * this.crossLengthFactor;
 
-        // Horizontal line
+        // horizontal line
         const horizontalGeometry = new THREE.BoxGeometry(crossLength, this.crossThickness, this.crossThickness);
         const horizontalMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
         const horizontalLine = new THREE.Mesh(horizontalGeometry, horizontalMaterial);
 
-        // Vertical line
+        // vertical line
         const verticalGeometry = new THREE.BoxGeometry(this.crossThickness, crossLength, this.crossThickness);
         const verticalMaterial = new THREE.MeshBasicMaterial({ color: 0x0000FF });
         const verticalLine = new THREE.Mesh(verticalGeometry, verticalMaterial);
         verticalLine.rotation.x = -Math.PI / 2;
 
-        // Group all parts
+        // group all parts
         const cursorGroup = new THREE.Group();
         cursorGroup.add(planCursor);
         cursorGroup.add(horizontalLine);
@@ -43,7 +43,7 @@ export class PlanCursor {
         return cursorGroup;
     }
 
-    // Resize the cursor based on zoom level
+    // resize the cursor based on zoom level
     resizeCursor(zoom) {
         let cursorScale;
         if (zoom >= 1 && zoom < 5) {
@@ -58,7 +58,6 @@ export class PlanCursor {
             cursorScale = 0.02;
         }
 
-        // Update scale of cursor group
         this.cursorGroup.scale.setScalar(cursorScale);
         // console.log(`cursor Scale: ${this.cursorGroup.scale.x}, zom Level: ${zoom}`);
     }

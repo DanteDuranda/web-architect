@@ -54,7 +54,7 @@ function init() {
 
     orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
 
-    gridHelperM = new THREE.GridHelper(50, 50, 0x00FF00,0xFFFFFF);
+    gridHelperM = new THREE.GridHelper(50, 50, 0x00FF00, 0xFFFFFF);
     scene.add(gridHelperM);
     gridHelperM.position.y += 0.02;
 
@@ -79,8 +79,8 @@ function init() {
 
 
 function activatePlanMode() {
-    scene.add(planCursor.cursorGroup); // Correct
-    canvas.style.cursor = 'none';
+    scene.add(planCursor.cursorGroup);
+    //canvas.style.cursor = 'none';
 
     orbControlOrtho.enabled = true;
     orbControlPersp.enabled = false;
@@ -114,53 +114,74 @@ function onMouseClick(event) {
 function onMouseMove(event) {
     if (isPlanModeActive){
         editorMouseMove(event);
-        updateWallPlacementIndicator(event)
+        updateCursorIndicator(event)
     }
 }
 
 
-function updateWallPlacementIndicator(event) { //TODO: nem oda illeszkedik a fuggoleges tengelyen ahova kene
+function updateCursorIndicator(event) { //TODO: nem oda illeszkedik a fuggoleges tengelyen ahova kene
     const gridIntersects = getIntersects(event, gridHelperM);
     if (gridIntersects.length > 0) {
         const point = gridIntersects[0].point;
+        const point2 = gridIntersects[1].point; //TODO: emergency workaround...
 
         // grid snap
         const gridSize = 1;
         point.x = Math.round(point.x / gridSize) * gridSize;
-        point.z = Math.round(point.z / gridSize) * gridSize;
+        point.z = Math.round(point2.z / gridSize) * gridSize;
 
         // update circle position
         planCursor.cursorGroup.position.set(point.x, sideBar.wallHeight, point.z);
+        drawDebugMarker(point.x, 0, point.z);
     }
 }
 
 
+function drawDebugMarker(x, y, z) {
+    // Create a sphere geometry for the marker
+    const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16); // Small sphere
+    const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color
+
+    // Create the marker mesh
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+
+    // Set the marker position
+    marker.position.set(x, y, z);
+
+    // Add the marker to the scene
+    scene.add(marker);
+
+    // Optional: Remove the marker after a short delay (for debugging purposes)
+    setTimeout(() => {
+        scene.remove(marker);
+        marker.geometry.dispose();
+        marker.material.dispose();
+    }, 2000); // Removes marker after 2 seconds
+}
+
+
+
 function editorClick(event) {
-    ///const intersects = getIntersects(event, placedWalls);
+    let point = new THREE.Vector3();
 
-    ///if (intersects.length > 0) {
-        ///console.log("Wall selected:", intersects[0].object);
-    ///} //else { // TODO: ezt atvarialni
-    const gridIntersects = getIntersects(event, gridHelperM);
-    if (gridIntersects.length > 0) {
-        const point = gridIntersects[0].point;
-        point.y = 0;
-        point.x = Math.round(point.x);
-        point.z = Math.round(point.z);
+    point.y = 0;
+    point.x = planCursor.cursorGroup.position.x;
+    point.z = planCursor.cursorGroup.position.z;
 
-        if (!isPlacingWall) {
-            startPoint.copy(point);
-            isPlacingWall = true;
-        } else {
-            const wall = createWall(startPoint, point);
-            scene.add(wall);
-            placedWalls.push(wall);
-            distanceLabel = null;
-            resetTempWall();
-            isPlacingWall = false;
-        }
+    if (!isPlacingWall) {
+        // start placing a wall
+        startPoint.copy(point);
+        isPlacingWall = true;
+    } else {
+        // finalize the wall placement
+        const finalizedWall = updateWall(tempWallVisualizer, startPoint, point, true);
+        scene.add(finalizedWall);
+        placedWalls.push(finalizedWall);
+
+        // reset state for next wall placement
+        resetTempWall();
+        isPlacingWall = false;
     }
-    //}
 }
 
 
@@ -170,97 +191,70 @@ function resetTempWall() {
         tempWallVisualizer.geometry.dispose();
         tempWallVisualizer = null;
     }
+    if (distanceLabel) {
+        scene.remove(distanceLabel.sprite);
+        distanceLabel = null;
+    }
 }
 
 
 function editorMouseMove(event) {
-    if (!isPlacingWall) {
-        return;
-    }
+    if (!isPlacingWall) return;
 
-    const intersects = getIntersects(event, gridHelperM);
+    let point = new THREE.Vector3();
 
-    if (intersects.length > 0) {
-        const point = intersects[0].point;
-        point.y = 0; // grid height
-        point.x = Math.round(point.x);
+    point.y = 0; // stay on gridHeight
+    point.x = planCursor.cursorGroup.position.x;
+    point.z = planCursor.cursorGroup.position.z;
 
-        // calculate euclidean distance startPoint - actual point
-        const distance = startPoint ? startPoint.distanceTo(point) : 0;
+    const distance = startPoint ? startPoint.distanceTo(point) : 0;
 
-        if (isPlacingWall) {
-            if (!tempWallVisualizer) {
-                tempWallVisualizer = createWall(startPoint, point); // Create a temporary wall
-                scene.add(tempWallVisualizer);
+    if (!tempWallVisualizer) {
+        // initialize the wall on the first interaction
+        tempWallVisualizer = updateWall(null, startPoint, point, true);
+        scene.add(tempWallVisualizer);
 
-                if (!distanceLabel) {
-                    distanceLabel = createDistanceLabel();
-                    scene.add(distanceLabel.sprite);
-                }
-            } else {
-                updateWall(tempWallVisualizer, startPoint, point);
-            }
-
-            if (distanceLabel) {
-                const { context, texture, sprite } = distanceLabel;
-
-                // update label
-                context.clearRect(0, 0, 256, 64);
-                context.fillText(`${distance.toFixed(2)} m`, 128, 32); // center text
-                // TODO: 0,00 kiirasra kerul
-                texture.needsUpdate = true;
-
-                // position to the cursor
-                sprite.position.set(tempWallVisualizer.position.x, sideBar.wallHeight + 1, tempWallVisualizer.position.z);
-            }
+        if (!distanceLabel) {
+            distanceLabel = createDistanceLabel();
+            scene.add(distanceLabel.sprite);
         }
+    } else {
+        // update the wall and its label while the mouse moves
+        updateWall(tempWallVisualizer, startPoint, point, false);
+        updateDistanceLabel(distanceLabel, distance);
     }
 }
 
+function updateDistanceLabel({ context, texture, sprite }, distance) {
+    context.clearRect(0, 0, 256, 64);
+    context.fillText(`${distance.toFixed(2)} m`, 128, 32); // Center text
+    texture.needsUpdate = true;
 
-function updateWall(wall, start, end) {
-    const wallLength = start.distanceTo(end);
-    wall.geometry.dispose();
-    wall.geometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
-
-    wall.position.set((start.x + end.x) / 2, sideBar.wallHeight / 2, (start.z + end.z) / 2);
-    wall.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
+    sprite.position.set(
+        tempWallVisualizer.position.x,
+        sideBar.wallHeight + 1,
+        tempWallVisualizer.position.z
+    );
 }
 
-
-function createWall(start, end) {
+function updateWall(wall, start, end, secondClick = false) {
     const wallLength = start.distanceTo(end);
-    const wallGeometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
-    const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x999900 });
-    const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+
+    if (secondClick) {
+        // create a new wall
+        const wallGeometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
+        const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x999900 });
+        wall = new THREE.Mesh(wallGeometry, wallMaterial);
+    } else {
+        // update the existing wall
+        wall.geometry.dispose();
+        wall.geometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
+    }
 
     wall.position.set((start.x + end.x) / 2, sideBar.wallHeight/2, (start.z + end.z) / 2);
     wall.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
 
     return wall;
-}
-
-
-function addWallProperties(wall, start, end) {  // TODO: bekötni
-    wall.position.set((start.x + end.x) / 2, sideBar.wallHeight/2, (start.z + end.z) / 2);
-    wall.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
-}
-
-
-function getIntersects(event, searchObject=null) {
-    let mouse = new THREE.Vector2();
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / (window.innerHeight+5)) * 2 + 1;
-
-    let raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
-
-    if (searchObject === null) {
-        return raycaster.intersect();
-    }
-
-    return raycaster.intersectObject(searchObject);
-     // TODO: mértékenységekre szabás
 }
 
 
@@ -282,6 +276,22 @@ function createDistanceLabel() {
     const sprite = new THREE.Sprite(material);
     sprite.scale.set(4, 1, 4); // Adjust scale based on your scene
     return { sprite, canvas, context, texture };
+}
+
+
+function getIntersects(event, searchObject=null) {
+    let mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / (window.innerHeight+5)) * 2 + 1;
+
+    let raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
+
+    if (searchObject === null) {
+        return raycaster.intersect();
+    }
+    return raycaster.intersectObject(searchObject);
+     // TODO: mértékenységekre szabás - searchObject
 }
 
 
