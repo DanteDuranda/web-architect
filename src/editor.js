@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
 import { PlanCursor } from "./planMode.js";
-import { SideBar } from "./UiControl.js";
+import { SideBar } from "./uiControl.js";
 
 const canvas = document.querySelector('canvas');
 
@@ -67,14 +67,51 @@ function init() {
 
     planCursor = new PlanCursor();
     activatePlanMode();
-
+    //generatorTesting()
     // event listeners
     window.addEventListener('resize', onWindowResize, false);
     document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
     document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
     document.getElementById("renderer").addEventListener("click", onMouseClick);
     document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
+    document.getElementById("renderer").addEventListener("contextmenu", onMouseRightClick);
     orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
+}
+
+
+function generatorTesting() {
+    // create a buffered geometry and add the vertices (points)
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array(points.length * 3);
+
+    // fill the array with vertex positions
+    for (let i = 0; i < points.length; i++) {
+        vertices[i * 3] = points[i].x;
+        vertices[i * 3 + 1] = points[i].y;
+        vertices[i * 3 + 2] = points[i].z;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+    // create faces (triangles) from the points | have to adjust for more complex geometries
+    const indices = [
+        0, 1, 2,  // triangle 1
+        0, 2, 3,  // triangle 2
+        4, 5, 6,  // triangle 3
+        4, 6, 7,  // triangle 4
+        6, 7, 8,  // triangle 5
+        6, 8, 9   // triangle 6
+    ];
+
+    geometry.setIndex(indices);  // set the index array for the geometry
+
+    const material = new THREE.MeshBasicMaterial({ color: 0xf1f792, side: THREE.DoubleSide, wireframe: false });
+
+    const planeMesh = new THREE.Mesh(geometry, material);
+    planeMesh.position.y = 0.1;
+
+    scene.add(planeMesh);
+    points = [];
 }
 
 
@@ -111,6 +148,22 @@ function onMouseClick(event) {
 }
 
 
+function onMouseRightClick(event) {
+    if (isPlanModeActive) {
+        editorRightClick(event);
+        generatorTesting();
+    }
+}
+
+
+function editorRightClick(event) {
+    if (isPlacingWall) {
+        isPlacingWall = false;
+        resetTempWall();
+    }
+}
+
+
 function onMouseMove(event) {
     if (isPlanModeActive){
         editorMouseMove(event);
@@ -122,6 +175,7 @@ function onMouseMove(event) {
 function updateCursorIndicator(event) { //TODO: nem oda illeszkedik a fuggoleges tengelyen ahova kene
     const gridIntersects = getIntersects(event, gridHelperM);
     if (gridIntersects.length > 0) {
+        canvas.style.cursor = 'none';
         const point = gridIntersects[0].point;
         const point2 = gridIntersects[1].point; //TODO: emergency workaround...
 
@@ -133,6 +187,8 @@ function updateCursorIndicator(event) { //TODO: nem oda illeszkedik a fuggoleges
         // update circle position
         planCursor.cursorGroup.position.set(point.x, sideBar.wallHeight, point.z);
         drawDebugMarker(point.x, 0, point.z);
+    }else{
+        canvas.style.cursor = 'default';
     }
 }
 
@@ -159,8 +215,7 @@ function drawDebugMarker(x, y, z) {
     }, 2000); // Removes marker after 2 seconds
 }
 
-
-
+let points = [];
 function editorClick(event) {
     let point = new THREE.Vector3();
 
@@ -168,6 +223,8 @@ function editorClick(event) {
     point.x = planCursor.cursorGroup.position.x;
     point.z = planCursor.cursorGroup.position.z;
 
+    points.push(point);
+    console.log(points);
     if (!isPlacingWall) {
         // start placing a wall
         startPoint.copy(point);
@@ -180,7 +237,9 @@ function editorClick(event) {
 
         // reset state for next wall placement
         resetTempWall();
-        isPlacingWall = false;
+        startPoint = point;
+
+        //isPlacingWall = false; // disbld bc i have impl contins wal plcment
     }
 }
 
