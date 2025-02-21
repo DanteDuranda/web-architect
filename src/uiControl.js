@@ -1,18 +1,20 @@
+import * as THREE from "three";
+
 export class SideBar {
     #widthInput;
     #heightInput;
-    #isWallPlacingActive;
     #planModeContent;
     #designModeContent;
+
 
     constructor() {
         this.sideBar = document.querySelector(".side-bar");
         this.wallHeight = 2.1;
         this.wallWidth = 0.2;
+        this.isWallPlacingActive = false;
 
         this.#widthInput = null;
         this.#heightInput = null;
-        this.#isWallPlacingActive = false;
 
         this.#planModeContent = null;  // cache sidebar-plan.html
         this.#designModeContent = null; // cache sidebar-design.html
@@ -25,6 +27,7 @@ export class SideBar {
         });
     }
 
+
     toggleSideBar() {
         const sideBar = document.querySelector(".side-bar");
 
@@ -36,6 +39,7 @@ export class SideBar {
             sideBar.classList.add("visible");
         }
     }
+
 
     async #preloadSidebarContent() {
         try {
@@ -77,7 +81,6 @@ export class SideBar {
                     this.#heightInput.addEventListener("input", () => this.setHeight(this.#heightInput.value));
                 }
 
-                // toggle-wall-draw button toggle function listener
                 const toggleButton = document.getElementById('toggle-wall-draw');
                 if (toggleButton) {
                     toggleButton.addEventListener('click', this.#toggleWallDrawHandler.bind(this));
@@ -100,14 +103,14 @@ export class SideBar {
     }
 
     #updateWallInputFields() {
-        // retrieve references to the wall input fields
         this.#widthInput = document.getElementById('width');
         this.#heightInput = document.getElementById('height');
     }
 
     #toggleWallDrawHandler(event) {
-        // toggle the active state of the button and update internal state
         event.target.classList.toggle('active');
-        this.#isWallPlacingActive = event.target.classList.contains('active');
+        this.isWallPlacingActive = event.target.classList.contains('active');
+
+        document.dispatchEvent(new CustomEvent('wallPlacingToggled', { detail: this.isWallPlacingActive }));
     }
 }

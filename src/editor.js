@@ -9,22 +9,24 @@ let scene, renderer, gridHelperM, gridHelperDm, gridHelperCm;
 let cameraOrtho, cameraPersp, orbControlOrtho, orbControlPersp;
 const minZoom = 1;
 const maxZoom = 100;
-let sideBar;
+const sideBar = new SideBar();
 let planCursor;
 let distanceLabel;
 let placedWalls = [];
 let isPlacingWall = false;
+let wallPlacingEnabled = false;
 let startPoint = new THREE.Vector3(); // starting point of wall placing
 let tempWallVisualizer = null; // temporary wall for real-time visualization
 let isPlanModeActive = false;
 const aspectRatio = window.innerWidth / window.innerHeight;
 const nonCullingLimit = 50;
 
+const debugEnabled = true;
+
 init();
 animate();
 
 function init() {
-    sideBar = new SideBar();
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x4A4848);
@@ -54,7 +56,7 @@ function init() {
 
     orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
 
-    gridHelperM = new THREE.GridHelper(50, 50, 0x00FF00, 0xFFFFFF);
+    gridHelperM = new THREE.GridHelper(50, 50, 0x422800, 0xFFFFFF);
     scene.add(gridHelperM);
     gridHelperM.position.y += 0.02;
 
@@ -66,18 +68,28 @@ function init() {
     // scene.add(gridHelperCm);
 
     planCursor = new PlanCursor();
+
     activatePlanMode();
     //generatorTesting()
-    // event listeners
-    window.addEventListener('resize', onWindowResize, false);
-    document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
-    document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
-    document.getElementById("renderer").addEventListener("click", onMouseClick);
-    document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
-    document.getElementById("renderer").addEventListener("contextmenu", onMouseRightClick);
-    orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 }
 
+// event listeners
+window.addEventListener('resize', onWindowResize, false);
+document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
+document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
+document.getElementById("renderer").addEventListener("click", onMouseClick);
+document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
+document.getElementById("renderer").addEventListener("contextmenu", onMouseRightClick);
+document.addEventListener('wallPlacingToggled', (event) => {
+    if (event.detail && isPlanModeActive) {
+        wallPlacingEnabled = true;
+        scene.add(planCursor.cursorGroup);
+    } else {
+        wallPlacingEnabled = false;
+        scene.remove(planCursor.cursorGroup);
+    }
+});
+orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 
 function generatorTesting() {
     // create a buffered geometry and add the vertices (points)
@@ -116,8 +128,7 @@ function generatorTesting() {
 
 
 function activatePlanMode() {
-    scene.add(planCursor.cursorGroup);
-    //canvas.style.cursor = 'none';
+
 
     orbControlOrtho.enabled = true;
     orbControlPersp.enabled = false;
@@ -142,21 +153,21 @@ function activateDesignMode() {
 
 
 function onMouseClick(event) {
-    if (isPlanModeActive) {
-        editorClick(event);
+    if (isPlanModeActive && wallPlacingEnabled) {
+        wallPlaceClick(event);
     }
 }
 
 
 function onMouseRightClick(event) {
     if (isPlanModeActive) {
-        editorRightClick(event);
+        exitWallPlacement(event);
         generatorTesting();
     }
 }
 
 
-function editorRightClick(event) {
+function exitWallPlacement(event) {
     if (isPlacingWall) {
         isPlacingWall = false;
         resetTempWall();
@@ -172,21 +183,24 @@ function onMouseMove(event) {
 }
 
 
-function updateCursorIndicator(event) { //TODO: nem oda illeszkedik a fuggoleges tengelyen ahova kene
+function updateCursorIndicator(event) {
     const gridIntersects = getIntersects(event, gridHelperM);
-    if (gridIntersects.length > 0) {
+    if (gridIntersects.length > 0 && sideBar.isWallPlacingActive) {
         canvas.style.cursor = 'none';
         const point = gridIntersects[0].point;
-        const point2 = gridIntersects[1].point; //TODO: emergency workaround...
+        const point2 = gridIntersects[1].point; // specific objects wich has "holes in it", i should use two points instead one
 
         // grid snap
         const gridSize = 1;
         point.x = Math.round(point.x / gridSize) * gridSize;
         point.z = Math.round(point2.z / gridSize) * gridSize;
 
-        // update circle position
         planCursor.cursorGroup.position.set(point.x, sideBar.wallHeight, point.z);
-        drawDebugMarker(point.x, 0, point.z);
+
+        // debug circle position update
+        if (debugEnabled) {
+            drawDebugMarker(point.x, 0, point.z);
+        }
     }else{
         canvas.style.cursor = 'default';
     }
@@ -215,8 +229,9 @@ function drawDebugMarker(x, y, z) {
     }, 2000); // Removes marker after 2 seconds
 }
 
+
 let points = [];
-function editorClick(event) {
+function wallPlaceClick(event) {
     let point = new THREE.Vector3();
 
     point.y = 0;
@@ -239,7 +254,7 @@ function editorClick(event) {
         resetTempWall();
         startPoint = point;
 
-        //isPlacingWall = false; // disbld bc i have impl contins wal plcment
+        //isPlacingWall = false; // disbld bc i have impl contins wall plcment
     }
 }
 
@@ -392,5 +407,3 @@ function animate() {
         renderer.render(scene, cameraPersp);
     }
 }
-
-
