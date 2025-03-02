@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
-import { PlanCursor } from "./planMode.js";
+import {FloorGenerator, PlanCursor} from "./planMode.js";
 import { SideBar } from "./uiControl.js";
 
 const canvas = document.querySelector('canvas');
@@ -91,41 +91,15 @@ document.addEventListener('wallPlacingToggled', (event) => {
 });
 orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 
-function generatorTesting() {
-    // create a buffered geometry and add the vertices (points)
-    const geometry = new THREE.BufferGeometry();
-    const vertices = new Float32Array(points.length * 3);
+function generateFloor() {
+    if (points.length < 3) return;                  // need at least 3 points to form a polygon
 
-    // fill the array with vertex positions
-    for (let i = 0; i < points.length; i++) {
-        vertices[i * 3] = points[i].x;
-        vertices[i * 3 + 1] = points[i].y;
-        vertices[i * 3 + 2] = points[i].z;
-    }
+    points.pop();                                   // the last point is also the starting point
+    let floorGenerator = new FloorGenerator(scene);
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-
-    // create faces (triangles) from the points | have to adjust for more complex geometries
-    const indices = [
-        0, 1, 2,  // triangle 1
-        0, 2, 3,  // triangle 2
-        4, 5, 6,  // triangle 3
-        4, 6, 7,  // triangle 4
-        6, 7, 8,  // triangle 5
-        6, 8, 9   // triangle 6
-    ];
-
-    geometry.setIndex(indices);  // set the index array for the geometry
-
-    const material = new THREE.MeshBasicMaterial({ color: 0xf1f792, side: THREE.DoubleSide, wireframe: false });
-
-    const planeMesh = new THREE.Mesh(geometry, material);
-    planeMesh.position.y = 0.1;
-
-    scene.add(planeMesh);
-    points = [];
+    scene.add(floorGenerator.generateFloor(points));
+    points = [];                                    // reset the point list
 }
-
 
 function activatePlanMode() {
 
@@ -162,7 +136,7 @@ function onMouseClick(event) {
 function onMouseRightClick(event) {
     if (isPlanModeActive) {
         exitWallPlacement(event);
-        generatorTesting();
+        generateFloor();
     }
 }
 
