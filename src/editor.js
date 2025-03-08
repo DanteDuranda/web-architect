@@ -56,15 +56,15 @@ function init() {
 
     orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
 
-    gridHelperM = new THREE.GridHelper(50, 50, 0x422800, 0xFFFFFF);
+    gridHelperM = new THREE.GridHelper(50, 50, 0x232526, 0xFFFFFF);
     scene.add(gridHelperM);
     gridHelperM.position.y += 0.02;
 
-    gridHelperDm = new THREE.GridHelper(50, 500, 0x00FF00, 0x556677);
+    gridHelperDm = new THREE.GridHelper(50, 500, 0x232526, 0x556677);
     scene.add(gridHelperDm);
     gridHelperDm.position.y += 0.01;
 
-    gridHelperCm = new THREE.GridHelper(50, 5000, 0x00FF00, 0xFFFFFF);
+    gridHelperCm = new THREE.GridHelper(50, 5000, 0x232526, 0x556677);
     // scene.add(gridHelperCm);
 
     planCursor = new PlanCursor();
@@ -91,15 +91,17 @@ document.addEventListener('wallPlacingToggled', (event) => {
 });
 orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 
-function generateFloor() {
-    if (points.length < 3) return;                  // need at least 3 points to form a polygon
 
-    points.pop();                                   // the last point is also the starting point
+function generateFloor() {
+    if (cornerPoint.length < 3) return;                  // need at least 3 points to form a polygon
+
+    cornerPoint.pop();                                   // the last point is also the starting point
     let floorGenerator = new FloorGenerator(scene);
 
-    scene.add(floorGenerator.generateFloor(points));
-    points = [];                                    // reset the point list
+    scene.add(floorGenerator.generateFloor(cornerPoint));
+    cornerPoint = [];                                    // reset the point list
 }
+
 
 function activatePlanMode() {
 
@@ -151,60 +153,15 @@ function exitWallPlacement(event) {
 
 function onMouseMove(event) {
     if (isPlanModeActive){
-        editorMouseMove(event);
-        updateCursorIndicator(event)
+        if(isPlacingWall)
+            wallPlacerMouseMove(event);
+
+        planCursor.updateCursorIndicator(scene, debugEnabled, canvas, sideBar.wallHeight, sideBar.isWallPlacingActive, getIntersects(event, gridHelperM));
     }
 }
 
 
-function updateCursorIndicator(event) {
-    const gridIntersects = getIntersects(event, gridHelperM);
-    if (gridIntersects.length > 0 && sideBar.isWallPlacingActive) {
-        canvas.style.cursor = 'none';
-        const point = gridIntersects[0].point;
-        const point2 = gridIntersects[1].point; // specific objects wich has "holes in it", i should use two points instead one
-
-        // grid snap
-        const gridSize = 1;
-        point.x = Math.round(point.x / gridSize) * gridSize;
-        point.z = Math.round(point2.z / gridSize) * gridSize;
-
-        planCursor.cursorGroup.position.set(point.x, sideBar.wallHeight, point.z);
-
-        // debug circle position update
-        if (debugEnabled) {
-            drawDebugMarker(point.x, 0, point.z);
-        }
-    }else{
-        canvas.style.cursor = 'default';
-    }
-}
-
-
-function drawDebugMarker(x, y, z) {
-    // Create a sphere geometry for the marker
-    const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16); // Small sphere
-    const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color
-
-    // Create the marker mesh
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-
-    // Set the marker position
-    marker.position.set(x, y, z);
-
-    // Add the marker to the scene
-    scene.add(marker);
-
-    // Optional: Remove the marker after a short delay (for debugging purposes)
-    setTimeout(() => {
-        scene.remove(marker);
-        marker.geometry.dispose();
-        marker.material.dispose();
-    }, 2000); // Removes marker after 2 seconds
-}
-
-
-let points = [];
+let cornerPoint = [];
 function wallPlaceClick(event) {
     let point = new THREE.Vector3();
 
@@ -212,8 +169,8 @@ function wallPlaceClick(event) {
     point.x = planCursor.cursorGroup.position.x;
     point.z = planCursor.cursorGroup.position.z;
 
-    points.push(point);
-    console.log(points);
+    cornerPoint.push(point);
+    console.log(cornerPoint);
     if (!isPlacingWall) {
         // start placing a wall
         startPoint.copy(point);
@@ -228,7 +185,7 @@ function wallPlaceClick(event) {
         resetTempWall();
         startPoint = point;
 
-        //isPlacingWall = false; // disbld bc i have impl contins wall plcment
+        //isPlacingWall = false; // disbld bc i have impl contins wall placement
     }
 }
 
@@ -246,9 +203,7 @@ function resetTempWall() {
 }
 
 
-function editorMouseMove(event) {
-    if (!isPlacingWall) return;
-
+function wallPlacerMouseMove(event) {
     let point = new THREE.Vector3();
 
     point.y = 0; // stay on gridHeight
@@ -273,6 +228,7 @@ function editorMouseMove(event) {
     }
 }
 
+
 function updateDistanceLabel({ context, texture, sprite }, distance) {
     context.clearRect(0, 0, 256, 64);
     context.fillText(`${distance.toFixed(2)} m`, 128, 32); // Center text
@@ -285,13 +241,14 @@ function updateDistanceLabel({ context, texture, sprite }, distance) {
     );
 }
 
+
 function updateWall(wall, start, end, secondClick = false) {
     const wallLength = start.distanceTo(end);
 
     if (secondClick) {
         // create a new wall
         const wallGeometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
-        const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x999900 });
+        const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x422800 });
         wall = new THREE.Mesh(wallGeometry, wallMaterial);
     } else {
         // update the existing wall
@@ -312,8 +269,8 @@ function createDistanceLabel() {
     canvas.height = 64;
 
     const context = canvas.getContext('2d');
-    context.font = '24px Arial';
-    context.fillStyle = 'white';
+    context.font = '30px Arial';
+    context.fillStyle = '#FAE8DE';
     context.textAlign = 'center';
     context.clearRect(0, 0, canvas.width, canvas.height);
 

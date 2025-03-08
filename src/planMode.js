@@ -61,6 +61,50 @@ export class PlanCursor {
         this.cursorGroup.scale.setScalar(cursorScale);
         // console.log(`cursor Scale: ${this.cursorGroup.scale.x}, zom Level: ${zoom}`);
     }
+
+    drawDebugMarker(x, y, z, scene) {
+        // Create a sphere geometry for the marker
+        const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16); // Small sphere
+        const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color
+
+        // Create the marker mesh
+        const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+
+        // Set the marker position
+        marker.position.set(x, y, z);
+
+        // Add the marker to the scene
+        scene.add(marker);
+
+        // Optional: Remove the marker after a short delay (for debugging purposes)
+        setTimeout(() => {
+            scene.remove(marker);
+            marker.geometry.dispose();
+            marker.material.dispose();
+        }, 2000); // Removes marker after 2 seconds
+    }
+
+    updateCursorIndicator(scene, debugEnabled, canvas, wallHeight, isWallPlacingActive, gridIntersects) {
+        if (gridIntersects.length > 0 && isWallPlacingActive) {
+            canvas.style.cursor = 'none';
+            const point = gridIntersects[0].point;
+            const point2 = gridIntersects[1].point; // specific objects wich has "holes in it", i should use two points instead one
+
+            // grid snap
+            const gridSize = 1;
+            point.x = Math.round(point.x / gridSize) * gridSize;
+            point.z = Math.round(point2.z / gridSize) * gridSize;
+
+            this.cursorGroup.position.set(point.x, wallHeight, point.z);
+
+            // debug circle position update
+            if (debugEnabled) {
+                this.drawDebugMarker(point.x, 0, point.z, scene);
+            }
+        }else{
+            canvas.style.cursor = 'default';
+        }
+    }
 }
 
 
@@ -72,7 +116,11 @@ export class FloorGenerator {
     }
 
     generateFloor(points) {
-        if (typeof points !== 'object' ) return; // needs 3 points to form polygon
+        if (typeof points !== 'object' || points.length < 3) return;
+
+        if (this.#isCounterClockwise(points)) {
+            points.reverse();
+        }
 
         const floorGeometry = new THREE.BufferGeometry();
         const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xf1f792, side: THREE.DoubleSide, wireframe: false });
@@ -84,7 +132,7 @@ export class FloorGenerator {
         for (let i = 0; i < points.length; i++) {
 
             if (typeof points[i].x !== "number" || typeof points[i].y !== "number" || typeof points[i].z !== "number") {
-                console.log("Found a not valid parameter for the floor generator.");
+                console.log("found a not valid parameter - {generateFloor(points)}");
                 return;
             }
 
@@ -121,7 +169,7 @@ export class FloorGenerator {
             }
 
             if (!earFound) {
-                console.warn("failed to triangulate the polygon (ear not found)");
+                console.warn("ear not found - {earClippingTriangulation(points)}");
                 return [];
             }
         }
@@ -162,6 +210,15 @@ export class FloorGenerator {
 
     #isConvex(prev, curr, next) {
         return (curr.x - prev.x) * (next.z - prev.z) - (curr.z - prev.z) * (next.x - prev.x) >= 0;
+    }
+
+    #isCounterClockwise(points) { // shoelace formula || Gauss's Area Calculation
+        let area = 0;
+        for (let i = 0; i < points.length; i++) {
+            const j = (i + 1) % points.length; // j = i+=1
+            area += (points[j].x - points[i].x) * (points[j].z + points[i].z); // adds the vector's length
+        }
+        return area > 0;  // clockwise if positive and counterclockwise if negative, the name of the function is inverted bc of the screen coordinates are also inverted
     }
 }
 
