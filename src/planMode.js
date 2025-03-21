@@ -67,25 +67,22 @@ export class PlanCursor {
         const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16); // Small sphere
         const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color
 
-        // Create the marker mesh
         const marker = new THREE.Mesh(markerGeometry, markerMaterial);
 
-        // Set the marker position
         marker.position.set(x, y, z);
 
-        // Add the marker to the scene
         scene.add(marker);
 
-        // Optional: Remove the marker after a short delay (for debugging purposes)
+        // remove after timeout
         setTimeout(() => {
             scene.remove(marker);
             marker.geometry.dispose();
             marker.material.dispose();
-        }, 2000); // Removes marker after 2 seconds
+        }, 2000); // 2 secs
     }
 
     updateCursorIndicator(scene, debugEnabled, canvas, wallHeight, isWallPlacingActive, gridIntersects) {
-        if (gridIntersects.length > 0 && isWallPlacingActive) {
+        if (isWallPlacingActive && gridIntersects.length > 0) {
             canvas.style.cursor = 'none';
             const point = gridIntersects[0].point;
             const point2 = gridIntersects[1].point; // specific objects wich has "holes in it", i should use two points instead one
@@ -105,14 +102,26 @@ export class PlanCursor {
             canvas.style.cursor = 'default';
         }
     }
+
+    static cornerToPoint(point, wallWidth, wallHeight, color) {
+        const radiusTop = wallWidth / 2;
+        const radiusBottom = wallWidth / 2;
+        const radialSegments = 32;
+
+        const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, wallHeight, radialSegments);
+        const material = new THREE.MeshBasicMaterial({ color: color });
+        const cylinder = new THREE.Mesh(geometry, material);
+
+        cylinder.position.set(point.x, point.y + wallHeight / 2, point.z);
+
+        return cylinder;
+    }
 }
 
 
 export class FloorGenerator {
-    #scene;
-
-    constructor(scene, isDebugEnabled=false) { //TODO: debug visualization for earclipping algoruithm
-        this.#scene = scene;
+    constructor(isDebugEnabled=false) { // TODO: debug visualization for earclipping algoruithm
+        this.isDebugEnabled = isDebugEnabled;
     }
 
     generateFloor(points) {
@@ -123,7 +132,8 @@ export class FloorGenerator {
         }
 
         const floorGeometry = new THREE.BufferGeometry();
-        const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xf1f792, side: THREE.DoubleSide, wireframe: false });
+        let color = this.isDebugEnabled ? Math.floor(Math.random() * 0xFFFFFF) : '0xf1f792';
+        const floorMaterial = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, wireframe: false });
         const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
 
         const triangleIndices = this.#earClippingTriangulation(points); // triangle index
@@ -148,6 +158,7 @@ export class FloorGenerator {
 
         return floorMesh;
     }
+
 
     #earClippingTriangulation(points) {
         let indices = [];
@@ -179,6 +190,7 @@ export class FloorGenerator {
         return indices;
     }
 
+
     #isEar(i, remainingPoints, points) {
         const prev = points[remainingPoints[(i - 1 + remainingPoints.length) % remainingPoints.length]];
         const curr = points[remainingPoints[i]];
@@ -197,6 +209,7 @@ export class FloorGenerator {
         return true;
     }
 
+
     #pointInTriangle(testPoint, prev, curr, next) { // TODO: nagyon fontos lenne, hogy ez normálisan működjön...
         const d1 = this.#sign(testPoint, prev, curr);
         const d2 = this.#sign(testPoint, curr, next);
@@ -204,15 +217,18 @@ export class FloorGenerator {
         return (d1 >= 0 && d2 >= 0 && d3 >= 0) || (d1 <= 0 && d2 <= 0 && d3 <= 0);
     }
 
+
     #sign(point1, point2, point3) {
         return (point1.x - point3.x) * (point2.z - point3.z) - (point2.x - point3.x) * (point1.z - point3.z);
     }
+
 
     #isConvex(prev, curr, next) {
         return (curr.x - prev.x) * (next.z - prev.z) - (curr.z - prev.z) * (next.x - prev.x) >= 0;
     }
 
-    #isCounterClockwise(points) { // shoelace formula || Gauss's Area Calculation
+
+    #isCounterClockwise(points) { // Shoelace Formula || Gauss's Area Calculation
         let area = 0;
         for (let i = 0; i < points.length; i++) {
             const j = (i + 1) % points.length; // j = i+=1
@@ -220,5 +236,98 @@ export class FloorGenerator {
         }
         return area > 0;  // clockwise if positive and counterclockwise if negative, the name of the function is inverted bc of the screen coordinates are also inverted
     }
-}
 
+    // A* algorithm for create a room from the existing walls + the new walls
+    static findShortestPathOnWalls(newPoligonStart, newPoligonEnd, placedWalls) {
+        let openSet = new Map();  // unexplored points, sorted by estimated cost
+        let cameFrom = new Map(); // stores the shortest path backtracking
+        let gScore = new Map();   // shortest known distance
+        let fScore = new Map();   // EXTIMATED total distance
+
+        // start point
+        gScore.set(newPoligonStart.toArray().toString(), 0);
+        fScore.set(newPoligonStart.toArray().toString(), this.heuristic(newPoligonStart, newPoligonEnd));
+        openSet.set(newPoligonStart.toArray().toString(), newPoligonStart);
+
+        while (openSet.size > 0) {
+            // find lowest f
+            let currentKey = [...openSet.keys()].reduce((a, b) =>
+                fScore.get(a) < fScore.get(b) ? a : b
+            );
+
+            let current = openSet.get(currentKey);
+
+            if (current.equals(newPoligonEnd)) {
+                return this.backTrackPath(cameFrom, current);
+            }
+
+            openSet.delete(currentKey);
+
+            let neighbors = this.getPossibleSources(current, placedWalls);
+            for (let wall of neighbors) {
+                let neighbor = wall.p1.equals(current) ? wall.p2 : wall.p1;
+                let neighborKey = neighbor.toArray().toString();
+
+                // g-score
+                let tentativeGScore = gScore.get(currentKey) + current.distanceTo(neighbor);
+
+                if (!gScore.has(neighborKey) || tentativeGScore < gScore.get(neighborKey)) {
+                    cameFrom.set(neighborKey, current);
+                    gScore.set(neighborKey, tentativeGScore);
+                    fScore.set(neighborKey, tentativeGScore + this.heuristic(neighbor, newPoligonEnd));
+
+                    if (!openSet.has(neighborKey)) {
+                        openSet.set(neighborKey, neighbor);
+                    }
+                }
+            }
+        }
+
+        return [];
+    }
+
+
+    static heuristic(a, b) {
+        return a.distanceTo(b); // euclidean distance
+    }
+
+    static backTrackPath(cameFrom, current) {
+        let path = [current];
+
+        while (cameFrom.has(current.toArray().toString())) {
+            current = cameFrom.get(current.toArray().toString());
+            path.unshift(current);
+        }
+
+        return path.reverse();
+    }
+
+    static getPossibleSources(newPoligonStart, placedWalls) {
+        let sources = [];
+
+        for (let i = 0; i < placedWalls.length; i++) {
+            let wall = placedWalls[i];
+
+            if (wall.p1.equals(newPoligonStart)) {
+                sources.push(wall);
+                /*if (this.debugEnabled)
+                    this.drawLine(newPoligonStart, wall.p2);*/
+            } else if (wall.p2.equals(newPoligonStart)) {
+                sources.push(wall);
+                /*if (this.debugEnabled)
+                    this.drawLine(newPoligonStart, wall.p1);*/
+            }
+        }
+
+        return sources;
+    }
+
+    drawLine(start, end) {
+        let material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line
+        let geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+        let line = new THREE.Line(geometry, material);
+        line.thickness = 2;
+        line.position.y += 5;
+        scene.add(line);
+    }
+}

@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
+import CSG from "../THREE-CSGMesh-master/three-csg.js";
+import { Wall } from "Wall";
+
 import {FloorGenerator, PlanCursor} from "./planMode.js";
 import { SideBar } from "./uiControl.js";
 
@@ -11,6 +14,9 @@ const minZoom = 1;
 const maxZoom = 100;
 const sideBar = new SideBar();
 let planCursor;
+let crosshair = document.createElement("crosshair");
+
+let wallStartPoint;
 let distanceLabel;
 let placedWalls = [];
 let isPlacingWall = false;
@@ -27,7 +33,6 @@ init();
 animate();
 
 function init() {
-
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x4A4848);
 
@@ -43,7 +48,7 @@ function init() {
     cameraOrtho.position.set(0, 30, 0);
     cameraOrtho.lookAt(0, 0, 0);
 
-    cameraPersp = new THREE.PerspectiveCamera(90, aspectRatio, 1, 1000);
+    cameraPersp = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000);
     cameraPersp.position.set(10, 10, 10);
     cameraPersp.lookAt(0, 0, 0);
 
@@ -58,7 +63,7 @@ function init() {
 
     gridHelperM = new THREE.GridHelper(50, 50, 0x232526, 0xFFFFFF);
     scene.add(gridHelperM);
-    gridHelperM.position.y += 0.02;
+    gridHelperM.position.y += 0.011;
 
     gridHelperDm = new THREE.GridHelper(50, 500, 0x232526, 0x556677);
     scene.add(gridHelperDm);
@@ -68,9 +73,31 @@ function init() {
     // scene.add(gridHelperCm);
 
     planCursor = new PlanCursor();
-
+    //testingGround();
+    createCrosshair();
     activatePlanMode();
     //generatorTesting()
+}
+
+function testingGround(){
+    let meshA = new THREE.Mesh(new THREE.BoxGeometry(1,1,1));
+    let meshB = new THREE.Mesh(new THREE.BoxGeometry(1,1,1));
+
+    meshB.position.add(new THREE.Vector3( 0.5, 0.5, 0.5));
+
+    //to make sure the .matrix of each mesh is current
+    meshA.updateMatrix();
+    meshB.updateMatrix();
+
+    //create a bsp tree from each of the meshes
+    let bspA = CSG.fromMesh( meshA );
+    let bspB = CSG.fromMesh( meshB );
+
+    let bspResult = bspA.subtract(bspB);
+
+    let meshResult = CSG.toMesh( bspResult, meshA.matrix, meshA.material );
+
+    scene.add(meshResult);
 }
 
 // event listeners
@@ -93,21 +120,39 @@ orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 
 
 function generateFloor() {
-    if (cornerPoint.length < 3) return;                  // need at least 3 points to form a polygon
+    if (newCornerPoints.length < 2) return; // need at least 2 points to form a line
 
-    cornerPoint.pop();                                   // the last point is also the starting point
-    let floorGenerator = new FloorGenerator(scene);
+    if (!newCornerPoints.at(0).equals(newCornerPoints.at(newCornerPoints.length-1))) {
+        let start = newCornerPoints.at(0);
+        let end = newCornerPoints.at(newCornerPoints.length-1);
+        let pathBetween = FloorGenerator.findShortestPathOnWalls(start, end, placedWalls);
+        pathBetween.pop(); // remove last and
+        pathBetween.shift(); // remove first, because those are already in the newCornerPoints
 
-    scene.add(floorGenerator.generateFloor(cornerPoint));
-    cornerPoint = [];                                    // reset the point list
+        if(pathBetween.size !== 0){
+            newCornerPoints.unshift(...pathBetween);
+        }
+    }
+
+    let floorGenerator = new FloorGenerator(debugEnabled);
+
+    scene.add(floorGenerator.generateFloor(newCornerPoints));
+    newCornerPoints = [];
+    placedWalls.push(...newWalls);// reset the point list
+
+    newWalls = [];
 }
 
 
 function activatePlanMode() {
-
-
     orbControlOrtho.enabled = true;
     orbControlPersp.enabled = false;
+
+    placedWalls.forEach((wall) => {
+        wall.visible = true;
+    });
+
+    crosshair.style.opacity = 0;
 
     isPlanModeActive = true;
 
@@ -116,9 +161,10 @@ function activatePlanMode() {
 
 
 function activateDesignMode() {
+    crosshair.style.opacity = 0.2;
     scene.remove(planCursor.cursorGroup);
     canvas.style.cursor = 'default';
-
+    sideBar.isWallPlacingActive = false;
     orbControlOrtho.enabled = false;
     orbControlPersp.enabled = true;
 
@@ -137,13 +183,15 @@ function onMouseClick(event) {
 
 function onMouseRightClick(event) {
     if (isPlanModeActive) {
-        exitWallPlacement(event);
+        exitWallPlacement();
         generateFloor();
+        startPoint = new THREE.Vector3();
+        scene.remove(wallStartPoint);
     }
 }
 
 
-function exitWallPlacement(event) {
+function exitWallPlacement() {
     if (isPlacingWall) {
         isPlacingWall = false;
         resetTempWall();
@@ -160,8 +208,8 @@ function onMouseMove(event) {
     }
 }
 
-
-let cornerPoint = [];
+let newCornerPoints = [];
+let newWalls = [];
 function wallPlaceClick(event) {
     let point = new THREE.Vector3();
 
@@ -169,17 +217,26 @@ function wallPlaceClick(event) {
     point.x = planCursor.cursorGroup.position.x;
     point.z = planCursor.cursorGroup.position.z;
 
-    cornerPoint.push(point);
-    console.log(cornerPoint);
+    newCornerPoints.push(point);
+    //console.log(cornerPoints);
     if (!isPlacingWall) {
         // start placing a wall
         startPoint.copy(point);
         isPlacingWall = true;
+
+        wallStartPoint = PlanCursor.cornerToPoint(point, sideBar.wallWidth + 0.05, sideBar.wallHeight+0.01, 0xFFFF00);
+        scene.add(wallStartPoint);
     } else {
         // finalize the wall placement
         const finalizedWall = updateWall(tempWallVisualizer, startPoint, point, true);
-        scene.add(finalizedWall);
-        placedWalls.push(finalizedWall);
+
+        let testWall = new Wall(finalizedWall, startPoint, point, sideBar.wallWidth, sideBar.wallHeight, 0x422800);
+        scene.add(testWall);
+
+        //scene.add(finalizedWall);
+        //placedWalls.push(finalizedWall);
+        //placedWalls.push(testWall);
+        newWalls.push(testWall);
 
         // reset state for next wall placement
         resetTempWall();
@@ -242,15 +299,15 @@ function updateDistanceLabel({ context, texture, sprite }, distance) {
 }
 
 
-function updateWall(wall, start, end, secondClick = false) {
+function updateWall(wall, start, end, click = false) {
     const wallLength = start.distanceTo(end);
 
-    if (secondClick) {
+    if (click) {
         // create a new wall
         const wallGeometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
         const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x422800 });
         wall = new THREE.Mesh(wallGeometry, wallMaterial);
-    } else {
+    } else /*if (move)*/{
         // update the existing wall
         wall.geometry.dispose();
         wall.geometry = new THREE.BoxGeometry(wallLength, sideBar.wallHeight, sideBar.wallWidth);
@@ -330,11 +387,44 @@ function onWindowResize() {
 }
 
 
+function createCrosshair() {
+    crosshair.style.position = "absolute";
+    crosshair.style.width = "8px";
+    crosshair.style.height = "8px";
+    crosshair.style.background = "white";
+    crosshair.style.opacity = 0.2;
+    crosshair.style.borderRadius = "50%";
+    crosshair.style.top = "50%";
+    crosshair.style.left = "50%";
+    crosshair.style.transform = "translate(-50%, -50%)";
+    crosshair.style.zIndex = "1000";
+    document.body.appendChild(crosshair);
+}
+
+function updateWallVisibility() {
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2(0, 0); // Center of the screen (normalized device coordinates)
+
+    raycaster.setFromCamera(mouse, cameraPersp);
+
+    let intersects = raycaster.intersectObjects(placedWalls, true);
+
+    placedWalls.forEach((wall) => {
+        wall.visible = true;
+    });
+
+    if (intersects.length > 0) {
+        let firstHit = intersects[0].object; // Get the first wall hit by the crosshair
+        firstHit.parent.visible = false; // Make it invisible
+    }
+}
+
 function animate() {
     requestAnimationFrame(animate);
     if (isPlanModeActive) {
         renderer.render(scene, cameraOrtho);
     } else {
+        updateWallVisibility();
         renderer.render(scene, cameraPersp);
     }
 }
