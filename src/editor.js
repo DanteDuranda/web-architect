@@ -1,10 +1,13 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'OrbitControls';
-import CSG from "../THREE-CSGMesh-master/three-csg.js";
-import { Wall } from "Wall";
 
+import CSG from "../THREE-CSGMesh-master/three-csg.js";
+import { OrbitControls } from 'OrbitControls';
 import {FloorGenerator, PlanCursor} from "./planMode.js";
+import {ObjectFilter} from "./DesignMode.js";
+import { Furniture } from "Furniture";
+import { TransformControls } from "TransformControls";
 import { SideBar } from "./uiControl.js";
+import { Wall } from "Wall";
 
 const canvas = document.querySelector('canvas');
 
@@ -12,9 +15,12 @@ let scene, renderer, gridHelperM, gridHelperDm, gridHelperCm;
 let cameraOrtho, cameraPersp, orbControlOrtho, orbControlPersp;
 const minZoom = 1;
 const maxZoom = 100;
-const sideBar = new SideBar();
+let sideBar = new SideBar();
 let planCursor;
 let crosshair = document.createElement("crosshair");
+
+let transformControls;
+let objectFilter = new ObjectFilter();
 
 let wallStartPoint;
 let distanceLabel;
@@ -36,6 +42,9 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x4A4848);
 
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // (color, intensity)
+    scene.add(ambientLight);
+
     cameraOrtho = new THREE.OrthographicCamera(
         nonCullingLimit * aspectRatio / -2,    // left
         nonCullingLimit * aspectRatio / 2,    // right
@@ -55,6 +64,8 @@ function init() {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true  });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio * 1.25);
+
+    transformControls = new TransformControls(cameraPersp, renderer.domElement);
 
     orbControlOrtho = new OrbitControls(cameraOrtho, renderer.domElement);
     orbControlOrtho.enableRotate = false;
@@ -107,6 +118,7 @@ document.getElementById("designModeBt").addEventListener("click", activateDesign
 document.getElementById("renderer").addEventListener("click", onMouseClick);
 document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
 document.getElementById("renderer").addEventListener("contextmenu", onMouseRightClick);
+
 document.addEventListener('wallPlacingToggled', (event) => {
     if (event.detail && isPlanModeActive) {
         wallPlacingEnabled = true;
@@ -116,6 +128,12 @@ document.addEventListener('wallPlacingToggled', (event) => {
         scene.remove(planCursor.cursorGroup);
     }
 });
+
+document.addEventListener("addFurnitureRequested", (event) => {
+    const { catalogItem } = event.detail;
+    scene.add(new Furniture(catalogItem));
+});
+
 orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 
 
@@ -177,6 +195,9 @@ function activateDesignMode() {
 function onMouseClick(event) {
     if (isPlanModeActive && wallPlacingEnabled) {
         wallPlaceClick(event);
+    } else if (!isPlanModeActive) {
+        let clickedObject = getIntersects(event);
+        console.log(clickedObject);
     }
 }
 
@@ -187,6 +208,8 @@ function onMouseRightClick(event) {
         generateFloor();
         startPoint = new THREE.Vector3();
         scene.remove(wallStartPoint);
+    } else { // designModeActive
+
     }
 }
 

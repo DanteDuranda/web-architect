@@ -97,3 +97,54 @@ body {
         padding: 0 25px;
     }
 }
+
+
+/* Furniture Catalog */
+
+#catalog {
+    display: flex;
+    flex-wrap: wrap;  /* Allows items to wrap to a new line */
+    gap: 15px;  /* Adds spacing between items */
+    justify-content: flex-start; /* Aligns items to the left */
+    padding: 15px;
+    margin: 5px;
+
+    max-height: 400px;  /* Set a maximum height for the catalog */
+    overflow-y: auto;  /* Enables vertical scrolling if needed */
+    border: 2px #422800 dashed;  /* Optional: Adds a subtle border */
+    background: #fbeee0;  /* Optional: Light background */
+}
+
+/* Optional: Style the scrollbar */
+#catalog::-webkit-scrollbar {
+    width: 8px;
+}
+
+#catalog::-webkit-scrollbar-thumb {
+    background-color: #422800;
+    border-radius: 4px;
+}
+
+.catalog-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px; /* Set a fixed width for each item */
+    text-align: center;
+}
+
+.catalog-button {
+    width: 80px;
+    height: 80px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    cursor: pointer;
+}
+
+.catalog-label {
+    margin-top: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}

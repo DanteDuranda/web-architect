@@ -3,80 +3,44 @@ import { FBXLoader } from "FBXLoader";
 
 class Furniture extends THREE.Group {
 
-    constructor(itemType) {
+    constructor(catalogItem) {
         super();
 
-        if (typeof itemType !== 'string')
-            throw new TypeError('Parameter [type] must be a string!');
+        this.userData = {
+            catalogItem: catalogItem,
+            smartResize: false,
+            model: null,
+            boundingBox: null // Store bounding box reference
+        };
 
-        this.userData = {type: itemType, smartResize: false};
-        this.model = null;
-        this.boundingBox = null;
-        this.catalogId = null;
-    }
-
-    /**
-     * Factory method for furniture objects.
-     * @param {string} type - The type of the furniture.
-     * @param {string} catalogId - The catalog ID for furniture. (also the name of the model)
-     * @returns {Furniture} - New instance of furniture subclass.
-     */
-    static createFurniture(type, catalogId = null) {
-        switch (type.toLowerCase()) {
-            case 'chair':
-                return new Chair(type, catalogId);
-            case 'table':
-                return new Chair(type, catalogId);
-            default:
-                throw new Error(`INVALID furniture type: ${type}!`);
-        }
+        this.loadModel();
     }
 
     loadModel() {
-        const modelLoader = new FBXLoader();
-        let pathToModel = "/res/models/" + this.userData.type + "/"+ this.catalogId +".fbx";
-        modelLoader.load(pathToModel, (loadedModel) => {
-                this.model = loadedModel;
-                this.resizeLoadedModel();
-                this.boundingBox = new THREE.Box3Helper(new THREE.Box3().setFromObject(this.model), new THREE.Color(0xff0000));
-                this.add(this.model);
-                this.add(this.boundingBox);
-                this.boundingBox.visible = true;
-            }
-        );
-        console.log(this.model);
+        const fbxPath = this.userData.catalogItem.modelPath;
+        const loader = new FBXLoader();
+        loader.load(fbxPath, (object) => {
+            this.userData.model = object; // Store model in userData
+            this.add(this.userData.model);
+            this.addBoundingBox();
+        }, undefined, (error) => {
+            console.error("cant load the model", error);
+        });
     }
 
-    resizeLoadedModel() {
-        throw new Error('Method "loadModel" is not implemented for ' + this.userData.type + '!');
+    addBoundingBox() {
+        if (!this.userData.model) {
+            throw new Error("model not loaded");
+        }
+
+        let box = new THREE.Box3().setFromObject(this.userData.model);
+        let bbox = new THREE.Box3Helper(box, new THREE.Color(0xFFA500));
+
+        this.userData.boundingBox = bbox;
+        this.add(bbox);
+
+        console.log("bbox size:", box.getSize(new THREE.Vector3()));
     }
 }
 
 export { Furniture };
-
-class Chair extends Furniture {
-
-    constructor(type, catalogId) {
-        super(type);
-        this.catalogId = catalogId;
-
-        super.loadModel();
-    }
-
-    resizeLoadedModel() {
-        if (this.model === null)
-            throw new Error("Model not yet loaded!")
-
-        let size = new THREE.Vector3();
-        let box = new THREE.Box3().setFromObject(this.model);
-        box.getSize(size);
-
-        let scaleY = 0.97 / size.y; // height
-        let scaleZ = 0.5 / size.z;  // depth
-        let scaleX = 0.4 / size.x;  // width scale
-
-        this.model.scale.set(scaleX, scaleY, scaleZ);
-    }
-}
-
-export { Chair };
