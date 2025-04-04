@@ -142,7 +142,7 @@ export class FloorGenerator {
         for (let i = 0; i < points.length; i++) {
 
             if (typeof points[i].x !== "number" || typeof points[i].y !== "number" || typeof points[i].z !== "number") {
-                console.log("found a not valid parameter - {generateFloor(points)}");
+                console.log("found an invalid parameter - {generateFloor(points)}");
                 return;
             }
 
@@ -154,7 +154,7 @@ export class FloorGenerator {
         floorGeometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
         floorGeometry.setIndex(triangleIndices);
 
-        floorMesh.position.y += 0.1;
+        floorMesh.position.y += 0.001;
 
         return floorMesh;
     }
@@ -321,6 +321,8 @@ export class FloorGenerator {
 
         return sources;
     }
+
+
 
     drawLine(start, end) {
         let material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line

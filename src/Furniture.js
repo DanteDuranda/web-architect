@@ -10,7 +10,7 @@ class Furniture extends THREE.Group {
             catalogItem: catalogItem,
             smartResize: false,
             model: null,
-            boundingBox: null // Store bounding box reference
+            boundingBox: null
         };
 
         this.loadModel();
@@ -35,7 +35,7 @@ class Furniture extends THREE.Group {
 
         let box = new THREE.Box3().setFromObject(this.userData.model);
         let bbox = new THREE.Box3Helper(box, new THREE.Color(0xFFA500));
-
+        bbox.visible = false;
         this.userData.boundingBox = bbox;
         this.add(bbox);
 

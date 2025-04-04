@@ -3,6 +3,7 @@ import { Furniture } from "Furniture";
 
 export class SideBar {
     static catalogItems = [];
+    static catalogItemsDOMElement = new Map();
 
     #widthInput;
     #heightInput;
@@ -19,6 +20,12 @@ export class SideBar {
         this.#widthInput = null;
         this.#heightInput = null;
 
+        this.chairFilterBt = null;
+        this.tableFilterBt = null;
+
+        this.officeCategoryBt = null;
+        this.lroomCategoryBt = null;
+
         this.#planModeContent = null;  // cached sidebar-plan.html
         this.#designModeContent = null; // cached sidebar-design.html
 
@@ -26,7 +33,7 @@ export class SideBar {
 
         // preload content files for plan and design modes
         this.#preloadSidebarContent().then(() => {
-            this.updateSidebar(true);
+            this.updateSidebar(false);
         });
     }
 
@@ -94,6 +101,21 @@ export class SideBar {
             if (this.#designModeContent) {
                 this.sideBar.innerHTML = this.#designModeContent;
                 FurnitureCatalog.loadCatalogItems();
+
+                this.sideBar.addEventListener('click', (event) => {
+                    if (event.target && event.target.id === 'chair-type-bt') {
+                        FurnitureCatalog.setFilters(null, 'chair', event.target);
+                    }
+                    if (event.target && event.target.id === 'table-type-bt') {
+                        FurnitureCatalog.setFilters(null, 'table', event.target);
+                    }
+                    if (event.target && event.target.id === 'office-category-bt') {
+                        FurnitureCatalog.setFilters('office', null, event.target);
+                    }
+                    if (event.target && event.target.id === 'lroom-category-bt') {
+                        FurnitureCatalog.setFilters('lroom', null, event.target);
+                    }
+                });
             }
         }
     }
@@ -125,11 +147,13 @@ class CatalogItem {
      * @param {string} id - Unique ID of the item (e.g., 'chair-00000').
      * @param {string} type - Type of the item (e.g., 'catalog-furniture').
      * @param {string} name - Display name of the item.
+     * @param roomType
      */
-    constructor(id, type, name) {
+    constructor(id, type, name, roomType) {
         this.catalogId = id;
         this.type = type;
         this.name = name;
+        this.roomType = roomType;
 
         this.category = id.split('-')[0];
 
@@ -137,44 +161,13 @@ class CatalogItem {
         this.modelPath = `res/models/${id}.fbx`;
     }
 
-    /**
-     * @returns { HTMLElement } Generated catalog item.
-     */
-    createElement() {
-        const container = document.createElement("div");
-        container.classList.add("catalog-item");
-        container.id = this.catalogId;
 
-        const button = document.createElement("button");
-        button.classList.add("catalog-button");
-        button.style.backgroundImage = `url(${this.imageSrc})`;
-        button.setAttribute("draggable", true);
-
-        button.addEventListener("click", () => {
-            const event = new CustomEvent("addFurnitureRequested", {
-                detail: { catalogItem: this }
-            });
-            document.dispatchEvent(event);
-        });
-
-        const label = document.createElement("p");
-        label.classList.add("catalog-label");
-        label.textContent = this.name;
-
-        container.appendChild(button);
-        container.appendChild(label);
-        return container;
-    }
-
-    static failResponse(){
-        const label = document.createElement("p");
-        label.textContent = "Oops.\nWe could not fetch the furnitures!";
-
-        return label;
-    }
 }
 
 class FurnitureCatalog {
+    static roomTypeFilter = null;
+    static furnitureTypeFilter = null;
+
     static async loadCatalogItems() {
         const catalogContainer = document.getElementById("catalog");
 
@@ -193,13 +186,113 @@ class FurnitureCatalog {
                 const id = item.getAttribute("id");
                 const type = item.getAttribute("type");
                 const name = item.getElementsByTagName("Name")[0].textContent;
+                const roomType = item.getElementsByTagName("RoomType")[0].textContent;
 
-                const catalogItem = new CatalogItem(id, type, name);
-                catalogContainer.appendChild(catalogItem.createElement());
-                SideBar.catalogItems.push(catalogItem); // save all items to create templates for the furniture class
+                const catalogItem = new CatalogItem(id, type, name, roomType);
+                const catalogItemDomElement = this.#createElement(catalogItem);
+                catalogContainer.appendChild(catalogItemDomElement);
+
+                /*save items*/
+                SideBar.catalogItems.push(catalogItem);
+                SideBar.catalogItemsDOMElement.set(catalogItem.catalogId, catalogItemDomElement);
             }
         } catch (error) {
-            catalogContainer.appendChild(CatalogItem.failResponse());
+            catalogContainer.appendChild(this.#failResponse());
         }
+    }
+
+    static filterItems() {
+        const catalogContainer = document.getElementById("catalog");
+        const filteredDomElementsToAdd = [];
+
+        for (const catalogItem of SideBar.catalogItems) {
+            let isInFilters = true;
+
+            if (this.roomTypeFilter && catalogItem.roomType !== this.roomTypeFilter) {
+                isInFilters = false;
+            }
+
+            if (this.furnitureTypeFilter && catalogItem.type !== this.furnitureTypeFilter) {
+                isInFilters = false;
+            }
+
+            if (isInFilters) {
+                filteredDomElementsToAdd.push(SideBar.catalogItemsDOMElement.get(catalogItem.catalogId));
+            }
+        }
+
+        while (catalogContainer.firstChild) {
+            catalogContainer.removeChild(catalogContainer.firstChild);
+        }
+
+        for (const domCatalogItem of filteredDomElementsToAdd) {
+            catalogContainer.appendChild(domCatalogItem);
+        }
+    }
+
+
+    static setFilters(roomTypeFilter, furnitureTypeFilter, clickedButton) {
+        const roomButtons = document.querySelectorAll("#room-category-bt-container .room-category-button");
+        const furnitureButtons = document.querySelectorAll("#furniture-category-bt-container .room-category-button");
+
+        let needToUpdateCatalog = false;
+
+        if(roomTypeFilter) {
+            this.roomTypeFilter = roomTypeFilter;
+            needToUpdateCatalog = true;
+            this.toggleActive(clickedButton, roomButtons);
+        } else if (furnitureTypeFilter) {
+            this.furnitureTypeFilter = furnitureTypeFilter;
+            needToUpdateCatalog = true;
+            this.toggleActive(clickedButton, furnitureButtons);
+        }
+
+        if(needToUpdateCatalog)
+            FurnitureCatalog.filterItems();
+    }
+
+    static toggleActive(clickedButton, buttonGroup) {
+        buttonGroup.forEach(button => {
+            if (button !== clickedButton) {
+                button.classList.remove("active");
+            }
+        });
+        clickedButton.classList.add("active");
+    }
+
+    /**
+     * @returns { HTMLElement } Generated catalog item.
+     */
+    static #createElement(catalogItem) {
+        const container = document.createElement("div");
+        container.classList.add("catalog-item");
+        container.id = catalogItem.catalogId;
+
+        const button = document.createElement("button");
+        button.classList.add("catalog-button");
+        button.style.backgroundImage = `url(${catalogItem.imageSrc})`;
+        button.setAttribute("draggable", true);
+
+        button.addEventListener("click", () => {
+            const event = new CustomEvent("addFurnitureRequested", {
+                detail: { catalogItem: catalogItem }
+            });
+            document.dispatchEvent(event);
+        });
+
+        const label = document.createElement("p");
+        label.classList.add("catalog-label");
+        label.textContent = catalogItem.name;
+
+        container.appendChild(button);
+        container.appendChild(label);
+        return container;
+    }
+
+    #failResponse(){
+        const label = document.createElement("p");
+        label.textContent = "Oops.\nWe could not fetch the furnitures!";
+
+        return label;
     }
 }

@@ -4,6 +4,21 @@ body {
     padding: 0;
 }
 
+.scroll-area {
+    overflow-y: auto;
+    max-height: calc(100vh - 58px);
+}
+
+/* Optional: Custom Scrollbar */
+.scroll-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+    background-color: #422800;
+    border-radius: 3px;
+}
+
 .heading {
     font-family: sans-serif;
     margin-left: 2%;
@@ -98,10 +113,8 @@ body {
     }
 }
 
-
 /* Furniture Catalog */
-
-#catalog {
+.catalog-section {
     display: flex;
     flex-wrap: wrap;  /* Allows items to wrap to a new line */
     gap: 15px;  /* Adds spacing between items */
@@ -116,13 +129,13 @@ body {
 }
 
 /* Optional: Style the scrollbar */
-#catalog::-webkit-scrollbar {
+.catalog-section::-webkit-scrollbar {
     width: 8px;
 }
 
-#catalog::-webkit-scrollbar-thumb {
+.catalog-section::-webkit-scrollbar-thumb {
     background-color: #422800;
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 .catalog-item {
@@ -144,6 +157,51 @@ body {
 }
 
 .catalog-label {
+    margin-top: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* RoomType Section */
+.room-category-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); /* Adjusts column size dynamically */
+    gap: 15px;  /* Adds 20px spacing between items */
+    justify-content: start; /* Aligns items from the left */
+    padding: 5px;
+    margin: 5px;
+
+    max-height: 400px;  /* Set a maximum height for the catalog */
+    overflow-y: auto;  /* Enables vertical scrolling if needed */
+    border: 2px #422800 dashed;  /* Optional: Adds a subtle border */
+    background: #fbeee0;  /* Optional: Light background */
+}
+
+.button-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px; /* Set a fixed width for each item */
+    text-align: center;
+}
+
+.room-category-button {
+    width: 64px;
+    height: 64px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.room-category-button.active {
+    opacity: 1;
+}
+
+.button-label{
     margin-top: 5px;
     font-size: 14px;
     font-weight: bold;

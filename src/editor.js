@@ -8,6 +8,8 @@ import { Furniture } from "Furniture";
 import { TransformControls } from "TransformControls";
 import { SideBar } from "./uiControl.js";
 import { Wall } from "Wall";
+import {WTransformControl} from "./WTransformControl.js";
+import {ThreeGeometry} from "ThreeGeometry";
 
 const canvas = document.querySelector('canvas');
 
@@ -42,8 +44,13 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x4A4848);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // (color, intensity)
-    scene.add(ambientLight);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1); // (color, intensity)
+    //scene.add(ambientLight);
+
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
+    scene.add(hemisphereLight);
+
+    //scene.add(ThreeGeometry.CreateCube(1,1,1, 0x000666));
 
     cameraOrtho = new THREE.OrthographicCamera(
         nonCullingLimit * aspectRatio / -2,    // left
@@ -65,12 +72,16 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio * 1.25);
 
-    transformControls = new TransformControls(cameraPersp, renderer.domElement);
-
     orbControlOrtho = new OrbitControls(cameraOrtho, renderer.domElement);
     orbControlOrtho.enableRotate = false;
-
     orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
+
+    transformControls = new WTransformControl(cameraPersp, renderer.domElement);
+    transformControls.addEventListener('dragging-changed', function (event) {
+        orbControlPersp.enabled = !event.value;
+    });
+
+    scene.add(transformControls);
 
     gridHelperM = new THREE.GridHelper(50, 50, 0x232526, 0xFFFFFF);
     scene.add(gridHelperM);
@@ -131,7 +142,9 @@ document.addEventListener('wallPlacingToggled', (event) => {
 
 document.addEventListener("addFurnitureRequested", (event) => {
     const { catalogItem } = event.detail;
-    scene.add(new Furniture(catalogItem));
+    const furnitureToAdd = new Furniture(catalogItem);
+    objectFilter.furnitures.push(furnitureToAdd)
+    scene.add(furnitureToAdd);
 });
 
 orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
@@ -196,10 +209,19 @@ function onMouseClick(event) {
     if (isPlanModeActive && wallPlacingEnabled) {
         wallPlaceClick(event);
     } else if (!isPlanModeActive) {
-        let clickedObject = getIntersects(event);
-        console.log(clickedObject);
+        let clickedObject = getIntersects(event)[0];
+        if (clickedObject && clickedObject.object.type === "Box3Helper") {
+            const model = clickedObject.object.parent.userData.model;
+
+            if (model) {
+                transformControls.attach(model);
+                clickedObject.object.visible = true; // Optionally, make the bounding box visible
+                console.log("attached WTransformControls to model:", model);
+            }
+        }
     }
 }
+
 
 
 function onMouseRightClick(event) {
@@ -364,20 +386,22 @@ function createDistanceLabel() {
 }
 
 
-function getIntersects(event, searchObject=null) {
+function getIntersects(event, searchObject = null) {
     let mouse = new THREE.Vector2();
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / (window.innerHeight+5)) * 2 + 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1; // Remove +5
 
     let raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
 
     if (searchObject === null) {
-        return raycaster.intersect();
+        return raycaster.intersectObjects(objectFilter.furnitures, true);
     }
-    return raycaster.intersectObject(searchObject);
-     // TODO: mértékenységekre szabás - searchObject
+    return raycaster.intersectObject(searchObject, true);
+
+    // TODO: mertekegysegre szabas
 }
+
 
 
 function manageZoomInPlanMode() {
