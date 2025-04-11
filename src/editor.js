@@ -14,6 +14,14 @@ import {ThreeGeometry} from "ThreeGeometry";
 const canvas = document.querySelector('canvas');
 
 let scene, renderer, gridHelperM, gridHelperDm, gridHelperCm;
+
+let gridHelperMap;
+const gridHelperGridSizes = {
+    cm: 0.01,
+    dm: 0.1,
+    m: 1
+};
+
 let cameraOrtho, cameraPersp, orbControlOrtho, orbControlPersp;
 const minZoom = 1;
 const maxZoom = 100;
@@ -35,7 +43,9 @@ let isPlanModeActive = false;
 const aspectRatio = window.innerWidth / window.innerHeight;
 const nonCullingLimit = 50;
 
-const debugEnabled = true;
+const debugEnabled = false;
+
+let cursorPlane;
 
 init();
 animate();
@@ -43,6 +53,8 @@ animate();
 function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x4A4848);
+
+    cursorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.1); // (color, intensity)
     //scene.add(ambientLight);
@@ -63,10 +75,16 @@ function init() {
 
     cameraOrtho.position.set(0, 30, 0);
     cameraOrtho.lookAt(0, 0, 0);
+    cameraOrtho.layers.enable(0);
+    cameraOrtho.layers.enable(1);
+    cameraOrtho.layers.enable(2);
 
     cameraPersp = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000);
     cameraPersp.position.set(10, 10, 10);
     cameraPersp.lookAt(0, 0, 0);
+    cameraPersp.layers.enable(0);
+    cameraPersp.layers.enable(1);
+    cameraPersp.layers.enable(2);
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true  });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -76,10 +94,13 @@ function init() {
     orbControlOrtho.enableRotate = false;
     orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
 
-    transformControls = new WTransformControl(cameraPersp, renderer.domElement);
+    transformControls = new WTransformControl(cameraPersp, renderer.domElement); // TODO: dual camera
     transformControls.addEventListener('dragging-changed', function (event) {
         orbControlPersp.enabled = !event.value;
+        //transformControls.isUsed = event.value;
     });
+    cameraPersp.addEventListener('zoom', transformControls.updateGizmoSize);
+    cameraPersp.addEventListener('move', transformControls.updateGizmoSize);
 
     scene.add(transformControls);
 
@@ -93,6 +114,12 @@ function init() {
 
     gridHelperCm = new THREE.GridHelper(50, 5000, 0x232526, 0x556677);
     // scene.add(gridHelperCm);
+
+    gridHelperMap = {
+        m: gridHelperM,
+        dm: gridHelperDm,
+        cm: gridHelperCm
+    };
 
     planCursor = new PlanCursor();
     //testingGround();
@@ -127,6 +154,7 @@ window.addEventListener('resize', onWindowResize, false);
 document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
 document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
 document.getElementById("renderer").addEventListener("click", onMouseClick);
+document.getElementById("renderer").addEventListener('contextmenu', OnRightClick);
 document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
 document.getElementById("renderer").addEventListener("contextmenu", onMouseRightClick);
 
@@ -176,6 +204,9 @@ function generateFloor() {
 
 
 function activatePlanMode() {
+    if (isPlanModeActive)
+        return;
+
     orbControlOrtho.enabled = true;
     orbControlPersp.enabled = false;
 
@@ -192,6 +223,9 @@ function activatePlanMode() {
 
 
 function activateDesignMode() {
+    if (!isPlanModeActive)
+        return;
+
     crosshair.style.opacity = 0.2;
     scene.remove(planCursor.cursorGroup);
     canvas.style.cursor = 'default';
@@ -209,19 +243,33 @@ function onMouseClick(event) {
     if (isPlanModeActive && wallPlacingEnabled) {
         wallPlaceClick(event);
     } else if (!isPlanModeActive) {
-        let clickedObject = getIntersects(event)[0];
-        if (clickedObject && clickedObject.object.type === "Box3Helper") {
-            const model = clickedObject.object.parent.userData.model;
+        let intersects = getIntersects(event, null, 1);
+        if (intersects[0]) {
+            const model = intersects[0].object.userData.root;
 
             if (model) {
                 transformControls.attach(model);
-                clickedObject.object.visible = true; // Optionally, make the bounding box visible
+                model.userData.boundingBox.visible = true;
                 console.log("attached WTransformControls to model:", model);
             }
         }
     }
 }
 
+
+function OnRightClick(event) {
+    event.preventDefault(); // disables the browsers context menu
+
+    if(!isPlanModeActive)
+    {
+        if(transformControls.object) {
+            if (transformControls.object) {
+                transformControls.object.userData.boundingBox.visible = false;
+                transformControls.detach();
+            }
+        }
+    }
+}
 
 
 function onMouseRightClick(event) {
@@ -248,8 +296,8 @@ function onMouseMove(event) {
     if (isPlanModeActive){
         if(isPlacingWall)
             wallPlacerMouseMove(event);
-
-        planCursor.updateCursorIndicator(scene, debugEnabled, canvas, sideBar.wallHeight, sideBar.isWallPlacingActive, getIntersects(event, gridHelperM));
+        planCursor.updateCursorIndicator(canvas, sideBar.wallHeight, sideBar.isWallPlacingActive,
+            gridHelperGridSizes[sideBar.unit], cameraOrtho, getIntersects(event, cursorPlane));
     }
 }
 
@@ -385,8 +433,7 @@ function createDistanceLabel() {
     return { sprite, canvas, context, texture };
 }
 
-
-function getIntersects(event, searchObject = null) {
+function getIntersects(event, searchObject = null, layer = 0) {
     let mouse = new THREE.Vector2();
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1; // Remove +5
@@ -395,11 +442,13 @@ function getIntersects(event, searchObject = null) {
     raycaster.setFromCamera(mouse, isPlanModeActive ? cameraOrtho : cameraPersp);
 
     if (searchObject === null) {
+        raycaster.layers.set(layer);
         return raycaster.intersectObjects(objectFilter.furnitures, true);
     }
-    return raycaster.intersectObject(searchObject, true);
 
-    // TODO: mertekegysegre szabas
+    const intersectionPoint = new THREE.Vector3();
+    const hit = raycaster.ray.intersectPlane(cursorPlane, intersectionPoint);
+    return hit ? intersectionPoint : null;
 }
 
 
@@ -467,6 +516,9 @@ function updateWallVisibility() {
 }
 
 function animate() {
+    if (transformControls.object)
+        transformControls.updateGizmoSize();
+
     requestAnimationFrame(animate);
     if (isPlanModeActive) {
         renderer.render(scene, cameraOrtho);

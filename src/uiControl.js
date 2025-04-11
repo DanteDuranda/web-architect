@@ -26,6 +26,8 @@ export class SideBar {
         this.officeCategoryBt = null;
         this.lroomCategoryBt = null;
 
+        this.unit = "m";
+
         this.#planModeContent = null;  // cached sidebar-plan.html
         this.#designModeContent = null; // cached sidebar-design.html
 
@@ -33,7 +35,7 @@ export class SideBar {
 
         // preload content files for plan and design modes
         this.#preloadSidebarContent().then(() => {
-            this.updateSidebar(false);
+            this.updateSidebar(true);
         });
     }
 
@@ -95,6 +97,8 @@ export class SideBar {
                 if (toggleButton) {
                     toggleButton.addEventListener('click', this.#toggleWallDrawHandler.bind(this));
                 }
+
+                this.handleUnitRadioButtons();
             }
         } else {
             // load cached design mode content
@@ -119,6 +123,21 @@ export class SideBar {
             }
         }
     }
+
+
+    handleUnitRadioButtons() {
+        const radioToCheck = document.querySelector(`input[name="unit"][value="${this.unit}"]`);
+        if (radioToCheck) {
+            radioToCheck.checked = true;
+        }
+
+        document.querySelectorAll('input[name="unit"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                this.unit = document.querySelector('input[name="unit"]:checked').value;
+            });
+        });
+    }
+
 
     setWidth(width) {
         this.wallWidth = width;

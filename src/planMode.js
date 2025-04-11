@@ -81,27 +81,24 @@ export class PlanCursor {
         }, 2000); // 2 secs
     }
 
-    updateCursorIndicator(scene, debugEnabled, canvas, wallHeight, isWallPlacingActive, gridIntersects) {
-        if (isWallPlacingActive && gridIntersects.length > 0) {
+    updateCursorIndicator(canvas, wallHeight, isWallPlacingActive, unit, camera, intersectionPoint) {
+        if (isWallPlacingActive) {
             canvas.style.cursor = 'none';
-            const point = gridIntersects[0].point;
-            const point2 = gridIntersects[1].point; // specific objects wich has "holes in it", i should use two points instead one
 
-            // grid snap
-            const gridSize = 1;
-            point.x = Math.round(point.x / gridSize) * gridSize;
-            point.z = Math.round(point2.z / gridSize) * gridSize;
+            if (intersectionPoint) {
+                const snappedX = Math.round(intersectionPoint.x / unit) * unit;
+                const snappedZ = Math.round(intersectionPoint.z / unit) * unit;
 
-            this.cursorGroup.position.set(point.x, wallHeight, point.z);
+                const precision = 1 / unit;
+                const snap = (val) => Math.round(val * precision) / precision;
 
-            // debug circle position update
-            if (debugEnabled) {
-                this.drawDebugMarker(point.x, 0, point.z, scene);
+                this.cursorGroup.position.set(snap(snappedX), wallHeight, snap(snappedZ));
             }
-        }else{
+        } else {
             canvas.style.cursor = 'default';
         }
     }
+
 
     static cornerToPoint(point, wallWidth, wallHeight, color) {
         const radiusTop = wallWidth / 2;
