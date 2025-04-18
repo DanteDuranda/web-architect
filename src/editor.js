@@ -5,15 +5,14 @@ import { OrbitControls } from 'OrbitControls';
 import {FloorGenerator, PlanCursor} from "./planMode.js";
 import {ObjectFilter} from "./DesignMode.js";
 import { Furniture } from "Furniture";
-import { TransformControls } from "TransformControls";
 import { SideBar } from "./uiControl.js";
 import { Wall } from "Wall";
 import {WTransformControl} from "./WTransformControl.js";
-import {ThreeGeometry} from "ThreeGeometry";
+import { CSS2DRenderer, CSS2DObject } from 'CSS2DRenderer';
 
 const canvas = document.querySelector('canvas');
 
-let scene, renderer, gridHelperM, gridHelperDm, gridHelperCm;
+let scene, renderer, cSS2DRenderer, gridHelperM, gridHelperDm, gridHelperCm;
 
 let gridHelperMap;
 const gridHelperGridSizes = {
@@ -43,7 +42,7 @@ let isPlanModeActive = false;
 const aspectRatio = window.innerWidth / window.innerHeight;
 const nonCullingLimit = 50;
 
-const debugEnabled = false;
+const debugEnabled = true;
 
 let cursorPlane;
 
@@ -85,10 +84,18 @@ function init() {
     cameraPersp.layers.enable(0);
     cameraPersp.layers.enable(1);
     cameraPersp.layers.enable(2);
+    cameraPersp.layers.enable(3);
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true  });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio * 1.25);
+
+    cSS2DRenderer = new CSS2DRenderer();
+    cSS2DRenderer.setSize(window.innerWidth, window.innerHeight);
+    cSS2DRenderer.domElement.style.position = 'absolute';
+    cSS2DRenderer.domElement.style.top = '0';
+    cSS2DRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(cSS2DRenderer.domElement);
 
     orbControlOrtho = new OrbitControls(cameraOrtho, renderer.domElement);
     orbControlOrtho.enableRotate = false;
@@ -97,7 +104,7 @@ function init() {
     transformControls = new WTransformControl(cameraPersp, renderer.domElement); // TODO: dual camera
     transformControls.addEventListener('dragging-changed', function (event) {
         orbControlPersp.enabled = !event.value;
-        //transformControls.isUsed = event.value;
+        transformControls.isDragging = event.value;
     });
     cameraPersp.addEventListener('zoom', transformControls.updateGizmoSize);
     cameraPersp.addEventListener('move', transformControls.updateGizmoSize);
@@ -106,14 +113,12 @@ function init() {
 
     gridHelperM = new THREE.GridHelper(50, 50, 0x232526, 0xFFFFFF);
     scene.add(gridHelperM);
-    gridHelperM.position.y += 0.011;
 
     gridHelperDm = new THREE.GridHelper(50, 500, 0x232526, 0x556677);
     scene.add(gridHelperDm);
-    gridHelperDm.position.y += 0.01;
+    gridHelperDm.position.y -= 0.001;
 
     gridHelperCm = new THREE.GridHelper(50, 5000, 0x232526, 0x556677);
-    // scene.add(gridHelperCm);
 
     gridHelperMap = {
         m: gridHelperM,
@@ -125,7 +130,6 @@ function init() {
     //testingGround();
     createCrosshair();
     activatePlanMode();
-    //generatorTesting()
 }
 
 function testingGround(){
@@ -197,8 +201,7 @@ function generateFloor() {
 
     scene.add(floorGenerator.generateFloor(newCornerPoints));
     newCornerPoints = [];
-    placedWalls.push(...newWalls);// reset the point list
-
+    placedWalls.push(...newWalls);
     newWalls = [];
 }
 
@@ -249,8 +252,6 @@ function onMouseClick(event) {
 
             if (model) {
                 transformControls.attach(model);
-                model.userData.boundingBox.visible = true;
-                console.log("attached WTransformControls to model:", model);
             }
         }
     }
@@ -263,10 +264,7 @@ function OnRightClick(event) {
     if(!isPlanModeActive)
     {
         if(transformControls.object) {
-            if (transformControls.object) {
-                transformControls.object.userData.boundingBox.visible = false;
                 transformControls.detach();
-            }
         }
     }
 }
@@ -334,8 +332,6 @@ function wallPlaceClick(event) {
         // reset state for next wall placement
         resetTempWall();
         startPoint = point;
-
-        //isPlacingWall = false; // disbld bc i have impl contins wall placement
     }
 }
 
@@ -517,13 +513,18 @@ function updateWallVisibility() {
 
 function animate() {
     if (transformControls.object)
+    {
         transformControls.updateGizmoSize();
+        transformControls.updateRayLines(objectFilter.furnitures, placedWalls);
+    }
 
     requestAnimationFrame(animate);
     if (isPlanModeActive) {
         renderer.render(scene, cameraOrtho);
+        cSS2DRenderer.render(scene, cameraOrtho);
     } else {
         updateWallVisibility();
         renderer.render(scene, cameraPersp);
+        cSS2DRenderer.render(scene, cameraPersp);
     }
 }
