@@ -2,41 +2,11 @@
     <CatalogItem id="chair-00000" type="chair">
         <Name>Komolyabb szék</Name>
         <RoomType>office</RoomType>
+        <GizmoType>only-horizontal</GizmoType>
     </CatalogItem>
     <CatalogItem id="table-00000" type="table">
         <Name>Legkomolyabb asztal</Name>
         <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
-        <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
-        <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
-        <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="chair-00000" type="chair">
-        <Name>Komolyabb szék</Name>
-        <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
-        <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
-        <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
-        <RoomType>office</RoomType>
-    </CatalogItem>
-    <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
-        <RoomType>office</RoomType>
+        <GizmoType>only-horizontal</GizmoType>
     </CatalogItem>
 </Catalog>

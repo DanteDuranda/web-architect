@@ -170,7 +170,7 @@ export class FloorGenerator {
                     const next = remainingPoints[(i + 1) % remainingPoints.length];
 
                     indices.push(prev, curr, next);
-                    remainingPoints.splice(i, 1); // Remove ear
+                    remainingPoints.splice(i, 1); // remove ear
                     earFound = true;
                     break;
                 }
