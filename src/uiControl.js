@@ -168,11 +168,12 @@ class CatalogItem {
      * @param {string} name - Display name of the item.
      * @param roomType
      */
-    constructor(id, type, name, roomType) {
+    constructor(id, type, name, roomType, gizmoType) {
         this.catalogId = id;
         this.type = type;
         this.name = name;
         this.roomType = roomType;
+        this.gizmoType = gizmoType;
 
         this.category = id.split('-')[0];
 
@@ -206,8 +207,9 @@ class FurnitureCatalog {
                 const type = item.getAttribute("type");
                 const name = item.getElementsByTagName("Name")[0].textContent;
                 const roomType = item.getElementsByTagName("RoomType")[0].textContent;
+                const gizmoType = item.getElementsByTagName("GizmoType")[0].textContent;
 
-                const catalogItem = new CatalogItem(id, type, name, roomType);
+                const catalogItem = new CatalogItem(id, type, name, roomType, gizmoType);
                 const catalogItemDomElement = this.#createElement(catalogItem);
                 catalogContainer.appendChild(catalogItemDomElement);
 
