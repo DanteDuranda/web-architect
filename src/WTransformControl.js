@@ -60,12 +60,8 @@ export class WTransformControl extends TransformControls {
         if (this.children[0]) {
             this.children[0].traverse((child) => {
                 if (child.material) {
-                    if (child.name.includes("X")) {
-                        child.material.color.set(0xFFA500); // x
-                    } else if (child.name.includes("Y")) {
-                        child.material.color.set(0xFFA500); // y
-                    } else if (child.name.includes("Z")) {
-                        child.material.color.set(0xFFA500); // z
+                    if ( child.name.includes("X") || child.name.includes("Y") || child.name.includes("Z") ) {
+                        child.material.color.set(0xFFA500);
                     }
                 }
             });
@@ -103,14 +99,6 @@ export class WTransformControl extends TransformControls {
         }
     }
 
-    //https://discourse.threejs.org/t/how-to-prevent-shrinking-transformcontrols/60714
-    //https://codepen.io/boytchev/pen/MWxOWga
-    updateGizmoSize() {
-        const size = 20 / this.position.distanceTo(this.camera.position) *
-            Math.min(1.9 * Math.tan(Math.PI * this.camera.fov / 360) / this.camera.zoom, 7);
-
-        this.setSize(size / 10);
-    }
 
     updateRayLines(furniture, placedWalls) {
         if (!this.object)
@@ -217,5 +205,15 @@ export class WTransformControl extends TransformControls {
         const distanceInCm = (distance * 100).toFixed(0);
         distanceLabel.position.copy(midPoint);
         distanceLabel.element.textContent = `${distanceInCm}cm`;
+    }
+
+
+    //https://discourse.threejs.org/t/how-to-prevent-shrinking-transformcontrols/60714
+    //https://codepen.io/boytchev/pen/MWxOWga
+    updateGizmoSize() {
+        const size = 20 / this.position.distanceTo(this.camera.position) *
+            Math.min(1.9 * Math.tan(Math.PI * this.camera.fov / 360) / this.camera.zoom, 7);
+
+        this.setSize(size / 10);
     }
 }

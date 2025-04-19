@@ -5,10 +5,11 @@ import { OrbitControls } from 'OrbitControls';
 import {FloorGenerator, PlanCursor} from "./planMode.js";
 import {ObjectFilter} from "./DesignMode.js";
 import { Furniture } from "Furniture";
-import { SideBar } from "./uiControl.js";
+import { SideBar } from "./UiControl.js";
 import { Wall } from "Wall";
 import {WTransformControl} from "./WTransformControl.js";
 import { CSS2DRenderer, CSS2DObject } from 'CSS2DRenderer';
+import { Telemetry } from "./Ui2d.js";
 
 const canvas = document.querySelector('canvas');
 
@@ -47,6 +48,7 @@ const debugEnabled = true;
 let cursorPlane;
 
 init();
+Telemetry.createTelemetryDisplay();
 animate();
 
 function init() {
@@ -511,7 +513,10 @@ function updateWallVisibility() {
     }
 }
 
+
 function animate() {
+    Telemetry.updateStats();
+
     if (transformControls.object)
     {
         transformControls.updateGizmoSize();
