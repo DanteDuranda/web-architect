@@ -4,7 +4,7 @@ class ThreeGeometry {
 
     static CreateCube(length=1, height=1, width=1, color=0xffffff)
     {
-        let boxGeometry = new THREE.BoxGeometry(width, height, width);
+        let boxGeometry = new THREE.BoxGeometry(length, height, width);
         let boxMaterial = new THREE.MeshBasicMaterial({color: color});
 
         return new THREE.Mesh(boxGeometry, boxMaterial);

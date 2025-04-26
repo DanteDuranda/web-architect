@@ -1,19 +1,20 @@
 import * as THREE from 'three';
 
 import CSG from "../THREE-CSGMesh-master/three-csg.js";
-import { OrbitControls } from 'OrbitControls';
+import {OrbitControls} from 'OrbitControls';
 import {FloorGenerator, PlanCursor} from "./planMode.js";
 import {ObjectFilter} from "./DesignMode.js";
-import { Furniture } from "Furniture";
-import { SideBar } from "./UiControl.js";
-import { Wall } from "Wall";
+import {Furniture} from "Furniture";
+import {SideBar} from "./UiControl.js";
+import {Wall} from "Wall";
 import {WTransformControl} from "./WTransformControl.js";
-import { CSS2DRenderer, CSS2DObject } from 'CSS2DRenderer';
-import { Telemetry } from "./Ui2d.js";
+import {CSS2DRenderer} from 'CSS2DRenderer';
+import {Telemetry} from "./Ui2d.js";
+import {WinDoor} from "./WinDoor.js";
 
 const canvas = document.querySelector('canvas');
 
-let scene, renderer, cSS2DRenderer, gridHelperM, gridHelperDm, gridHelperCm;
+let scene, renderer, ANISOTROPY_MAX, cSS2DRenderer, gridHelperM, gridHelperDm, gridHelperCm;
 
 let gridHelperMap;
 const gridHelperGridSizes = {
@@ -25,11 +26,11 @@ const gridHelperGridSizes = {
 let cameraOrtho, cameraPersp, orbControlOrtho, orbControlPersp;
 const minZoom = 1;
 const maxZoom = 100;
-let sideBar = new SideBar();
+let sideBar;
 let planCursor;
 let crosshair = document.createElement("crosshair");
 
-let transformControls;
+let wTransformControls;
 let objectFilter = new ObjectFilter();
 
 let wallStartPoint;
@@ -47,9 +48,28 @@ const debugEnabled = true;
 
 let cursorPlane;
 
+let isClickSuppressed = false;
+let needToUpdateWinDoorCSG = false;
+
 init();
 Telemetry.createTelemetryDisplay();
 animate();
+let mouseDownPosition = { x: 0, y: 0 };
+let clickSuppressed = false;
+canvas.addEventListener('mousedown', (event) => {
+    mouseDownPosition = { x: event.clientX, y: event.clientY };
+    clickSuppressed = false;
+});
+
+canvas.addEventListener('mouseup', (event) => {
+    const dx = Math.abs(event.clientX - mouseDownPosition.x);
+    const dy = Math.abs(event.clientY - mouseDownPosition.y);
+    const movementThreshold = 5; // pixels
+
+    if (dx > movementThreshold || dy > movementThreshold) {
+        clickSuppressed = true;
+    }
+});
 
 function init() {
     scene = new THREE.Scene();
@@ -92,6 +112,8 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio * 1.25);
 
+    ANISOTROPY_MAX = renderer.capabilities.getMaxAnisotropy();
+
     cSS2DRenderer = new CSS2DRenderer();
     cSS2DRenderer.setSize(window.innerWidth, window.innerHeight);
     cSS2DRenderer.domElement.style.position = 'absolute';
@@ -103,15 +125,22 @@ function init() {
     orbControlOrtho.enableRotate = false;
     orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
 
-    transformControls = new WTransformControl(cameraPersp, renderer.domElement); // TODO: dual camera
-    transformControls.addEventListener('dragging-changed', function (event) {
+    wTransformControls = new WTransformControl(cameraOrtho, renderer.domElement); // TODO: dual camera
+    wTransformControls.addEventListener('dragging-changed', function (event) {
         orbControlPersp.enabled = !event.value;
-        transformControls.isDragging = event.value;
+        wTransformControls.isDragging = event.value;
+        needToUpdateWinDoorCSG = true;
     });
-    cameraPersp.addEventListener('zoom', transformControls.updateGizmoSize);
-    cameraPersp.addEventListener('move', transformControls.updateGizmoSize);
+    wTransformControls.addEventListener('mouseUp', () => {
+        if (wTransformControls.isDragging) {
+            needToUpdateWinDoorCSG = false;
+        }
+    });
+    cameraPersp.addEventListener('zoom', wTransformControls.updateGizmoSize);
+    cameraPersp.addEventListener('move', wTransformControls.updateGizmoSize);
+    scene.add(wTransformControls);
 
-    scene.add(transformControls);
+    sideBar = new SideBar(wTransformControls);
 
     gridHelperM = new THREE.GridHelper(50, 50, 0x232526, 0xFFFFFF);
     scene.add(gridHelperM);
@@ -176,13 +205,12 @@ document.addEventListener('wallPlacingToggled', (event) => {
 
 document.addEventListener("addFurnitureRequested", (event) => {
     const { catalogItem } = event.detail;
-    const furnitureToAdd = new Furniture(catalogItem);
+    const furnitureToAdd = new Furniture(catalogItem, ANISOTROPY_MAX);
     objectFilter.furnitures.push(furnitureToAdd)
     scene.add(furnitureToAdd);
 });
 
 orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
-
 
 function generateFloor() {
     if (newCornerPoints.length < 2) return; // need at least 2 points to form a line
@@ -204,6 +232,8 @@ function generateFloor() {
     scene.add(floorGenerator.generateFloor(newCornerPoints));
     newCornerPoints = [];
     placedWalls.push(...newWalls);
+
+    needToUpdateWinDoorCSG = true;
     newWalls = [];
 }
 
@@ -214,12 +244,11 @@ function activatePlanMode() {
 
     orbControlOrtho.enabled = true;
     orbControlPersp.enabled = false;
-
     placedWalls.forEach((wall) => {
         wall.visible = true;
     });
-
     crosshair.style.opacity = 0;
+    wTransformControls.switchCamera(cameraOrtho);
 
     isPlanModeActive = true;
 
@@ -231,12 +260,15 @@ function activateDesignMode() {
     if (!isPlanModeActive)
         return;
 
+    wallPlacingEnabled = false;
+
     crosshair.style.opacity = 0.2;
     scene.remove(planCursor.cursorGroup);
     canvas.style.cursor = 'default';
     sideBar.isWallPlacingActive = false;
     orbControlOrtho.enabled = false;
     orbControlPersp.enabled = true;
+    wTransformControls.switchCamera(cameraPersp);
 
     isPlanModeActive = false;
 
@@ -245,29 +277,38 @@ function activateDesignMode() {
 
 
 function onMouseClick(event) {
+    if (clickSuppressed)
+        return;
+
     if (isPlanModeActive && wallPlacingEnabled) {
         wallPlaceClick(event);
-    } else if (!isPlanModeActive) {
+    } else if (true) { //TODO:: ezt kivenni h orthoval is selectelhessek
         let intersects = getIntersects(event, null, 1);
-        if (intersects[0]) {
-            const model = intersects[0].object.userData.root;
 
-            if (model) {
-                transformControls.attach(model);
+        const maxDepth = Math.min(intersects.length, 3); //TODO: raycastert kikene szervezni mostmar...
+        for (let i = 0; i < maxDepth; i++) {
+            if (intersects[i] && intersects[i].object.userData.root) {
+                if (!intersects[i].object.userData.root.visible)
+                    continue;
+
+                let model = intersects[i].object.userData.root;
+                if (model) {
+                    wTransformControls.attach(model);
+                }
             }
         }
+
     }
 }
-
 
 function OnRightClick(event) {
     event.preventDefault(); // disables the browsers context menu
 
-    if(!isPlanModeActive)
-    {
-        if(transformControls.object) {
-                transformControls.detach();
-        }
+    if(clickSuppressed)
+        return;
+
+    if(wTransformControls.object) {
+            wTransformControls.detach();
     }
 }
 
@@ -324,14 +365,9 @@ function wallPlaceClick(event) {
         const finalizedWall = updateWall(tempWallVisualizer, startPoint, point, true);
 
         let testWall = new Wall(finalizedWall, startPoint, point, sideBar.wallWidth, sideBar.wallHeight, 0x422800);
+        newWalls.push(testWall);
         scene.add(testWall);
 
-        //scene.add(finalizedWall);
-        //placedWalls.push(finalizedWall);
-        //placedWalls.push(testWall);
-        newWalls.push(testWall);
-
-        // reset state for next wall placement
         resetTempWall();
         startPoint = point;
     }
@@ -441,15 +477,13 @@ function getIntersects(event, searchObject = null, layer = 0) {
 
     if (searchObject === null) {
         raycaster.layers.set(layer);
-        return raycaster.intersectObjects(objectFilter.furnitures, true);
+        return raycaster.intersectObjects(scene.children, true);
     }
 
     const intersectionPoint = new THREE.Vector3();
     const hit = raycaster.ray.intersectPlane(cursorPlane, intersectionPoint);
     return hit ? intersectionPoint : null;
 }
-
-
 
 function manageZoomInPlanMode() {
     clampZoom();
@@ -497,30 +531,32 @@ function createCrosshair() {
 
 function updateWallVisibility() {
     let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2(0, 0); // Center of the screen (normalized device coordinates)
+    raycaster.layers.set(3);
+    let screenCenter = new THREE.Vector2(0, 0); // Center of the screen (normalized device coordinates)
 
-    raycaster.setFromCamera(mouse, cameraPersp);
+    raycaster.setFromCamera(screenCenter, cameraPersp);
 
     let intersects = raycaster.intersectObjects(placedWalls, true);
 
     placedWalls.forEach((wall) => {
-        wall.visible = true;
+        wall.toggleVisibility(true);
     });
 
     if (intersects.length > 0) {
-        let firstHit = intersects[0].object; // Get the first wall hit by the crosshair
-        firstHit.parent.visible = false; // Make it invisible
+        let firstHit = intersects[0].object;
+
+        if (!firstHit.parent.isAttached)
+            firstHit.parent.toggleVisibility(false);
     }
 }
-
 
 function animate() {
     Telemetry.updateStats();
 
-    if (transformControls.object)
+    if (wTransformControls.object && wTransformControls.object.name !== "wallGeometry")
     {
-        transformControls.updateGizmoSize();
-        transformControls.updateRayLines(objectFilter.furnitures, placedWalls);
+        wTransformControls.updateGizmoSize();
+        wTransformControls.updateRayLines(objectFilter.furnitures, placedWalls);
     }
 
     requestAnimationFrame(animate);
@@ -531,5 +567,18 @@ function animate() {
         updateWallVisibility();
         renderer.render(scene, cameraPersp);
         cSS2DRenderer.render(scene, cameraPersp);
+    }
+
+    /*if(needToUpdateWinDoorCSG) { //TODO: veglegesben ez igy nem a legoptimalizaltabb, hekanak jo egyelore || DEPRECATED -> addwindoorban lefut eloszor
+        for (let wall of placedWalls) {
+            if (wall.userData.winDoors.length > 0)
+                wall.updateWindoorOnWall();
+        }
+        needToUpdateWinDoorCSG = false;
+    }*/
+
+    if (wTransformControls.object && wTransformControls.object instanceof WinDoor) {
+        const wall = wTransformControls.object.wall;
+        wall.updateWindoorOnWall();
     }
 }

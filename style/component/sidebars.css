@@ -128,7 +128,6 @@ body {
     background: #fbeee0;  /* Optional: Light background */
 }
 
-/* Optional: Style the scrollbar */
 .catalog-section::-webkit-scrollbar {
     width: 8px;
 }

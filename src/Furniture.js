@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import {FBXLoader} from "FBXLoader";
+import { FBXLoader } from "FBXLoader";
+import { WObject } from "./WObject.js";
 
 const boundingBoxMaterial = new THREE.MeshBasicMaterial({
     color: 0xFFA500,
@@ -7,8 +8,8 @@ const boundingBoxMaterial = new THREE.MeshBasicMaterial({
     transparent: true,
 });
 
-class Furniture extends THREE.Group {
-    constructor(catalogItem) {
+class Furniture extends WObject {
+    constructor(catalogItem, ANISOTROPY_MAX) {
         super();
 
         this.userData = {
@@ -17,13 +18,12 @@ class Furniture extends THREE.Group {
             model: null,
             boundingBox: null,
             boundingWireframe: null,
-            gizmoMode: 'full',
         };
 
-        this.loadModel(); /* <= dimensions; = boundings*/
+        this.loadModel(ANISOTROPY_MAX); /* <= dimensions; = boundings*/
     }
 
-    loadModel() {
+    loadModel(ANISOTROPY_MAX) {
         const fbxPath = this.userData.catalogItem.modelPath;
         const loader = new FBXLoader();
 
@@ -32,6 +32,20 @@ class Furniture extends THREE.Group {
 
             object.traverse(child => {
                 child.userData.root = this;
+
+                if (child.isMesh && child.material) {
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    materials.forEach(material => {
+                        ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'bumpMap', 'emissiveMap'].forEach(mapType => { // TODO: atkell majd gondolnom a vegen, hogy kell e az osszes
+                            setTimeout(() => {
+                                if (material[mapType] && material[mapType].image) {
+                                    material[mapType].anisotropy = ANISOTROPY_MAX;
+                                    material[mapType].needsUpdate = true;
+                                }
+                            }, 1000); // heka to prevent material[mapType] === undefined and throwing warnings to the console
+                        });
+                    });
+                }
             });
 
             this.add(this.userData.model);
@@ -44,7 +58,7 @@ class Furniture extends THREE.Group {
             });
 
         }, undefined, (error) => {
-            console.error("cant load the model", error);
+            console.error("unable to load the model", error);
         });
     }
 
@@ -87,6 +101,94 @@ class Furniture extends THREE.Group {
         this.add(this.userData.boundingWireframe);
     }
 
+    handleAttachDetach(attachState) //TODO: igy mar lehet ez itt tulzas, de hatha irok meg bele valamit
+    {
+        this.toggleHighlight(attachState);
+    }
+
+    toggleHighlight(highlightState) {
+        this.userData.boundingWireframe.visible = highlightState;
+    }
+
+    onDelete() {
+        if (this.userData.model) {
+            this.userData.model.traverse(child => {
+                if (child.isMesh) {
+
+                    if (child.geometry) {
+                        child.geometry.dispose();
+                    }
+
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    materials.forEach(material => {
+                        ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'bumpMap', 'emissiveMap'].forEach(mapType => {
+                            if (material[mapType]) {
+                                material[mapType].dispose();
+                            }
+                        });
+                        material.dispose();
+                    });
+                }
+            });
+        }
+
+        if (this.userData.boundingBox && this.userData.boundingBox.geometry) {
+            this.userData.boundingBox.geometry.dispose();
+        }
+        if (this.userData.boundingWireframe) {
+            this.remove(this.userData.boundingWireframe);
+        }
+        if (this.parent) {
+            this.parent.remove(this );
+        }
+
+        this.userData.model = null;
+        this.userData.boundingWireframe = null;
+        this.userData.boundingBox = null;
+    }
+
+    get model() {
+        return this.userData.model;
+    }
+
+    set model(value) {
+        this.userData.model = value;
+        this.add(value);
+    }
+
+    get boundingBox() {
+        return this.userData.boundingBox;
+    }
+
+    set boundingBox(value) {
+        this.userData.boundingBox = value;
+        this.add(value);
+    }
+
+    get boundingWireframe() {
+        return this.userData.boundingWireframe;
+    }
+
+    set boundingWireframe(value) {
+        this.userData.boundingWireframe = value;
+        this.add(value);
+    }
+
+    get catalogItem() {
+        return this.userData.catalogItem;
+    }
+
+    set catalogItem(value) {
+        this.userData.catalogItem = value;
+    }
+
+    get dimensions() {
+        return this.userData.dimensions;
+    }
+
+    set dimensions(value) {
+        this.userData.dimensions = value;
+    }
 }
 
 export { Furniture };

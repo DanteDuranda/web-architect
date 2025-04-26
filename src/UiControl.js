@@ -1,5 +1,3 @@
-import * as THREE from "three";
-import { Furniture } from "Furniture";
 
 export class SideBar {
     static catalogItems = [];
@@ -9,8 +7,8 @@ export class SideBar {
     #heightInput;
     #planModeContent;
     #designModeContent;
-
-    constructor() {
+    constructor(transformControls) {
+        this.transformControls = transformControls;
 
         this.sideBar = document.querySelector(".side-bar");
         this.wallHeight = 2.1;
@@ -33,6 +31,10 @@ export class SideBar {
 
         document.getElementById("showSidebarBt").addEventListener("click", this.toggleSideBar);
 
+        this.furnitureCatalog = new FurnitureCatalog();
+
+        this.handleTransformButtons(transformControls);
+
         // preload content files for plan and design modes
         this.#preloadSidebarContent().then(() => {
             this.updateSidebar(true);
@@ -42,16 +44,18 @@ export class SideBar {
 
     toggleSideBar() {
         const sideBar = document.querySelector(".side-bar");
+        const transformModes = document.querySelector('.control-groups');
 
         if (sideBar.classList.contains("visible")) {
             sideBar.classList.remove("visible");
             sideBar.classList.add("hidden");
+            transformModes.classList.remove('with-sidebar');
         } else {
             sideBar.classList.remove("hidden");
             sideBar.classList.add("visible");
+            transformModes.classList.add('with-sidebar');
         }
     }
-
 
     async #preloadSidebarContent() {
         try {
@@ -73,7 +77,6 @@ export class SideBar {
             console.error('Error loading sidebar content:', err);
         }
     }
-
 
     updateSidebar(isPlanModeActive) {
         if (isPlanModeActive) {
@@ -99,25 +102,26 @@ export class SideBar {
                 }
 
                 this.handleUnitRadioButtons();
+                this.handleAddWinDoorFromCatalog(this.transformControls);
             }
         } else {
             // load cached design mode content
             if (this.#designModeContent) {
                 this.sideBar.innerHTML = this.#designModeContent;
-                FurnitureCatalog.loadCatalogItems();
+                this.furnitureCatalog.loadCatalogItems();
 
                 this.sideBar.addEventListener('click', (event) => {
                     if (event.target && event.target.id === 'chair-type-bt') {
-                        FurnitureCatalog.setFilters(null, 'chair', event.target);
+                        this.furnitureCatalog.setFilters(null, 'chair', event.target);
                     }
                     if (event.target && event.target.id === 'table-type-bt') {
-                        FurnitureCatalog.setFilters(null, 'table', event.target);
+                        this.furnitureCatalog.setFilters(null, 'table', event.target);
                     }
                     if (event.target && event.target.id === 'office-category-bt') {
-                        FurnitureCatalog.setFilters('office', null, event.target);
+                        this.furnitureCatalog.setFilters('office', null, event.target);
                     }
                     if (event.target && event.target.id === 'lroom-category-bt') {
-                        FurnitureCatalog.setFilters('lroom', null, event.target);
+                        this.furnitureCatalog.setFilters('lroom', null, event.target);
                     }
                 });
             }
@@ -138,6 +142,47 @@ export class SideBar {
         });
     }
 
+    handleTransformButtons(wTransformControls) {
+        const transformGroup = document.querySelector('.transform-modes');
+
+        transformGroup?.addEventListener('click', (e) => {
+            const button = e.target.closest('.transform-button');
+            if (!button || !transformGroup.contains(button)) return;
+
+            transformGroup.querySelectorAll('.transform-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            button.classList.add('active');
+            const mode = button.dataset.mode;
+            wTransformControls.changeTransformModes(mode);
+        });
+
+        const deleteButton = document.getElementById('delete-button');
+        deleteButton.addEventListener('click', (e) => {
+            wTransformControls.deleteObject();
+        })
+    }
+
+    handleAddWinDoorFromCatalog(wTransformControls) {
+        const catalogSection = document.querySelector('.catalog-section');
+
+        catalogSection?.addEventListener('click', (e) => {
+            const button = e.target.closest('.catalog-button');
+            if (!button || !catalogSection.contains(button)) return;
+
+            const selectedWall = wTransformControls.object;
+
+            if (!selectedWall || selectedWall.name !== "Wall") {
+                console.warn("No wall selected to attach a WinDoor.");
+                return;
+            }
+
+            const type = button.dataset.type || 'plain';
+
+            selectedWall.addWindoor(type);
+        });
+    }
 
     setWidth(width) {
         this.wallWidth = width;
@@ -160,39 +205,65 @@ export class SideBar {
     }
 }
 
-class CatalogItem {
+export class CatalogItem {
     /**
      * Creates a new catalog item.
      * @param {string} id - Unique ID of the item (e.g., 'chair-00000').
      * @param {string} type - Type of the item (e.g., 'catalog-furniture').
      * @param {string} name - Display name of the item.
      * @param roomType
+     * @param gizmoType
+     * @param resizable
      */
-    constructor(id, type, name, roomType, gizmoType) {
+    constructor(id, type, name, roomType, gizmoType, resizable) {
         this.catalogId = id;
         this.type = type;
         this.name = name;
         this.roomType = roomType;
         this.gizmoType = gizmoType;
+        this.resizable = resizable;
 
         this.category = id.split('-')[0];
-
         this.imageSrc = `res/image/${this.category}/${id}.png`;
         this.modelPath = `res/models/${id}.fbx`;
     }
-
-
 }
 
-class FurnitureCatalog {
+class Catalog {
+    async loadCatalogItems() {
+        throw new Error("Method 'loadCatalogItems' must be implemented.");
+    }
+
+    filterItems() {
+        throw new Error("Method 'filterItems' must be implemented.");
+    }
+
+    setFilters(roomTypeFilter, furnitureTypeFilter, clickedButton) {
+        throw new Error("Method 'setFilters' must be implemented.");
+    }
+
+    toggleActive(clickedButton, buttonGroup) {
+        throw new Error("Method 'toggleActive' must be implemented.");
+    }
+
+    createElement(catalogItem) {
+        throw new Error("Method 'createElement' must be implemented.");
+    }
+
+    failResponse() {
+        throw new Error("Method 'failResponse' must be implemented.");
+    }
+}
+
+class FurnitureCatalog extends Catalog {
     static roomTypeFilter = null;
     static furnitureTypeFilter = null;
 
-    static async loadCatalogItems() {
+    async loadCatalogItems() {
         const catalogContainer = document.getElementById("catalog");
 
         try {
-            const response = await fetch("/res/catalog_Items.xml");
+            const response = await fetch("/res/furniture_catalog_Items.xml");
             const text = await response.text();
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(text, "text/xml");
@@ -208,8 +279,10 @@ class FurnitureCatalog {
                 const name = item.getElementsByTagName("Name")[0].textContent;
                 const roomType = item.getElementsByTagName("RoomType")[0].textContent;
                 const gizmoType = item.getElementsByTagName("GizmoType")[0].textContent;
+                const resizableTag = item.getElementsByTagName("Resizable")[0];
+                const resizable = resizableTag.textContent.trim() === "true";
 
-                const catalogItem = new CatalogItem(id, type, name, roomType, gizmoType);
+                const catalogItem = new CatalogItem(id, type, name, roomType, gizmoType, resizable);
                 const catalogItemDomElement = this.#createElement(catalogItem);
                 catalogContainer.appendChild(catalogItemDomElement);
 
@@ -222,7 +295,7 @@ class FurnitureCatalog {
         }
     }
 
-    static filterItems() {
+    filterItems() {
         const catalogContainer = document.getElementById("catalog");
         const filteredDomElementsToAdd = [];
 
@@ -251,8 +324,7 @@ class FurnitureCatalog {
         }
     }
 
-
-    static setFilters(roomTypeFilter, furnitureTypeFilter, clickedButton) {
+    setFilters(roomTypeFilter, furnitureTypeFilter, clickedButton) {
         const roomButtons = document.querySelectorAll("#room-category-bt-container .room-category-button");
         const furnitureButtons = document.querySelectorAll("#furniture-category-bt-container .room-category-button");
 
@@ -269,10 +341,10 @@ class FurnitureCatalog {
         }
 
         if(needToUpdateCatalog)
-            FurnitureCatalog.filterItems();
+            this.filterItems();
     }
 
-    static toggleActive(clickedButton, buttonGroup) {
+    toggleActive(clickedButton, buttonGroup) {
         buttonGroup.forEach(button => {
             if (button !== clickedButton) {
                 button.classList.remove("active");
@@ -284,7 +356,7 @@ class FurnitureCatalog {
     /**
      * @returns { HTMLElement } Generated catalog item.
      */
-    static #createElement(catalogItem) {
+    #createElement(catalogItem) {
         const container = document.createElement("div");
         container.classList.add("catalog-item");
         container.id = catalogItem.catalogId;
@@ -315,5 +387,31 @@ class FurnitureCatalog {
         label.textContent = "Oops.\nWe could not fetch the furnitures!";
 
         return label;
+    }
+}
+
+class WinDoorCatalog extends Catalog { // maybe DEPRECATED
+    async loadCatalogItems() {
+        throw new Error("");
+    }
+
+    filterItems() {
+        throw new Error("");
+    }
+
+    setFilters(roomTypeFilter, furnitureTypeFilter, clickedButton) {
+        throw new Error("");
+    }
+
+    toggleActive(clickedButton, buttonGroup) {
+        throw new Error("");
+    }
+
+    createElement(catalogItem) {
+        throw new Error("");
+    }
+
+    failResponse() {
+        throw new Error("");
     }
 }

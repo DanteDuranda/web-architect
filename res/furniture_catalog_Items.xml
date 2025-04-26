@@ -2,11 +2,13 @@
     <CatalogItem id="chair-00000" type="chair">
         <Name>Komolyabb szék</Name>
         <RoomType>office</RoomType>
-        <GizmoType>only-horizontal</GizmoType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable>false</Resizable>
     </CatalogItem>
     <CatalogItem id="table-00000" type="table">
         <Name>Legkomolyabb asztal</Name>
         <RoomType>office</RoomType>
-        <GizmoType>only-horizontal</GizmoType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable>false</Resizable>
     </CatalogItem>
 </Catalog>
