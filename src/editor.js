@@ -193,9 +193,8 @@ window.addEventListener('resize', onWindowResize, false);
 document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
 document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
 document.getElementById("renderer").addEventListener("click", onMouseClick);
-document.getElementById("renderer").addEventListener('contextmenu', OnRightClick);
-document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
 document.getElementById("renderer").addEventListener("contextmenu", onMouseRightClick);
+document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
 
 document.addEventListener('wallPlacingToggled', (event) => {
     if (event.detail && isPlanModeActive) {
@@ -305,26 +304,22 @@ function onMouseClick(event) {
     }
 }
 
-function OnRightClick(event) {
+
+function onMouseRightClick(event) {
     event.preventDefault(); // disables the browsers context menu
 
     if(clickSuppressed)
         return;
 
-    if(wTransformControls.object) {
-            wTransformControls.detach();
-    }
-}
-
-
-function onMouseRightClick(event) {
     if (isPlanModeActive) {
         exitWallPlacement();
         generateFloor();
         startPoint = new THREE.Vector3();
         scene.remove(wallStartPoint);
-    } else { // designModeActive
-
+    } else {
+        if(wTransformControls.object) {
+            wTransformControls.detach();
+        }
     }
 }
 
