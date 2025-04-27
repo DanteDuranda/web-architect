@@ -41,8 +41,6 @@ class Wall extends WObject {
             originalWallGeometry: null
         };
 
-        //this.addWindoor(wallWidth);
-
         this.pointIndicators = [] // redundant now...
 
         this.cylinder1 = ThreeGeometry.CreateCylinder(wallWidth / 2, wallHeight, color);

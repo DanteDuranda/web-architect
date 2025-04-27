@@ -136,6 +136,11 @@ function init() {
             needToUpdateWinDoorCSG = false;
         }
     });
+    wTransformControls.addEventListener('objectChange', () => {
+        if (wTransformControls.mode === 'scale' && wTransformControls.object instanceof WinDoor) {
+            //wTransformControls.object.onResize();
+        }
+    });
     cameraPersp.addEventListener('zoom', wTransformControls.updateGizmoSize);
     cameraPersp.addEventListener('move', wTransformControls.updateGizmoSize);
     scene.add(wTransformControls);

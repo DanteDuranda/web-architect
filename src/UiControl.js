@@ -174,7 +174,6 @@ export class SideBar {
             const selectedWall = wTransformControls.object;
 
             if (!selectedWall || selectedWall.name !== "Wall") {
-                console.warn("No wall selected to attach a WinDoor.");
                 return;
             }
 
