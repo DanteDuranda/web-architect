@@ -1,6 +1,4 @@
 
-
-
 /**
  * @class ObjectFilter
  * @description Static class that manages a collection of furnitures.

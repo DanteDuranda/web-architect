@@ -162,7 +162,6 @@ function init() {
     };
 
     planCursor = new PlanCursor();
-    //testingGround();
     createCrosshair();
     activatePlanMode();
 }
@@ -192,7 +191,7 @@ function testingGround(){
 window.addEventListener('resize', onWindowResize, false);
 document.getElementById("planModeBt").addEventListener("click", activatePlanMode);
 document.getElementById("designModeBt").addEventListener("click", activateDesignMode);
-document.getElementById("renderer").addEventListener("click", onMouseClick);
+document.getElementById("renderer").addEventListener("click", onMouseLeftClick);
 document.getElementById("renderer").addEventListener("contextmenu", onMouseRightClick);
 document.getElementById("renderer").addEventListener("mousemove", onMouseMove);
 
@@ -279,7 +278,7 @@ function activateDesignMode() {
 }
 
 
-function onMouseClick(event) {
+function onMouseLeftClick(event) {
     if (clickSuppressed)
         return;
 
