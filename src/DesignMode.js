@@ -2,19 +2,14 @@ import * as THREE from "three";
 
 /**
  * @class ObjectFilter
- * @description Singleton class that manages a collection of furnitures.
+ * @description Static class that manages a collection of furnitures.
  */
 export class ObjectFilter {
-    constructor() {
-        if (!ObjectFilter.instance) {
-            this.furnitures = [];
+    static addedFurnitures = [];
 
-            ObjectFilter.instance = this;
-        }
-        this.addedFurnitures = [];
-        return ObjectFilter.instance;
+    static removeFurniture(furniture) {
+        this.addedFurnitures = this.furnitures.filter(f => f !== furniture);
     }
 }
 
-const objectFilterInstance = new ObjectFilter();
-export default objectFilterInstance;
+export default ObjectFilter;

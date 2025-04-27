@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import CSG from "../THREE-CSGMesh-master/three-csg.js";
 import {OrbitControls} from 'OrbitControls';
 import {FloorGenerator, PlanCursor} from "./planMode.js";
-import {ObjectFilter} from "./DesignMode.js";
+import { ObjectFilter } from "./AppState.js";
 import {Furniture} from "Furniture";
 import {SideBar} from "./UiControl.js";
 import {Wall} from "Wall";
@@ -31,7 +31,6 @@ let planCursor;
 let crosshair = document.createElement("crosshair");
 
 let wTransformControls;
-let objectFilter = new ObjectFilter();
 
 let wallStartPoint;
 let distanceLabel;
@@ -211,7 +210,7 @@ document.addEventListener('wallPlacingToggled', (event) => {
 document.addEventListener("addFurnitureRequested", (event) => {
     const { catalogItem } = event.detail;
     const furnitureToAdd = new Furniture(catalogItem, ANISOTROPY_MAX);
-    objectFilter.furnitures.push(furnitureToAdd)
+    ObjectFilter.addedFurnitures.push(furnitureToAdd)
     scene.add(furnitureToAdd);
 });
 
@@ -561,7 +560,7 @@ function animate() {
     if (wTransformControls.object && wTransformControls.object.name !== "wallGeometry")
     {
         wTransformControls.updateGizmoSize();
-        wTransformControls.updateRayLines(objectFilter.furnitures, placedWalls);
+        wTransformControls.updateRayLines(ObjectFilter.addedFurnitures, placedWalls);
     }
 
     requestAnimationFrame(animate);

@@ -4,8 +4,8 @@ import {LineGeometry} from "LineGeometry";
 import {LineMaterial} from "LineMaterial";
 import {Line2} from "Line2";
 import {CSS2DObject} from 'CSS2DRenderer';
+import { ObjectFilter } from "./AppState.js";
 
-LineMaterial
 
 const FLOOR_OFFSET = 0.05;
 const MAX_DISTANCE = 10;
@@ -198,7 +198,8 @@ export class WTransformControl extends TransformControls {
             attachedObject.parent.remove(attachedObject);
         }
 
-        attachedObject.onDelete(); // attached to wallgeometry and not for the group...TODO:
+        attachedObject.onDelete();
+        ObjectFilter.removeFurniture(attachedObject); // issue #7 The user found a bug which occurred when he put down two furnitures and deleted one of them. The other object still measured the distance from the deleted object, wich was invisible.
     }
 
     updateRayLines(furniture, placedWalls) {
