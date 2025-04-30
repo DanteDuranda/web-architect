@@ -46,7 +46,7 @@ class WinDoor extends THREE.Group {
         ];
 
         this.userData = {
-            catalogItem: new CatalogItem("testWindow", "testWindow", "testWindow", "testWindow", "only_xy", true),
+            catalogItem: new CatalogItem("testWindow", "testWindow", "testWindow", "testWindow", "only_xy", true, null),
             dimensions: { "X": -1, "Y": -1, "Z": -1 },
             parts: [],
             centerCubeMesh: CSGGeometry,

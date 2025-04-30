@@ -5,6 +5,7 @@ import {LineMaterial} from "LineMaterial";
 import {Line2} from "Line2";
 import {CSS2DObject} from 'CSS2DRenderer';
 import { ObjectFilter } from "./AppState.js";
+import {Furniture} from "./Furniture.js";
 
 
 const FLOOR_OFFSET = 0.05;
@@ -57,6 +58,7 @@ export class WTransformControl extends TransformControls {
     #rayLines = [];
     #highlightedBoxes = []
     #rotationLabel;
+    #sizeLabels = [];
     #snappingThresh;
     #snapAngle;
 
@@ -67,7 +69,7 @@ export class WTransformControl extends TransformControls {
 
         for (let i = 0; i < 4; i++) { // 4 horizontal axis aligned line
             const geometry = new LineGeometry();
-            geometry.setPositions([0, 0, 0, 0, 0, 0]);
+            geometry.setPositions([0, 0, 0, 0, 0, 0]); // start start start end end end
 
             const line = new Line2(geometry, distanceLineMat);
             line.visible = false;
@@ -78,6 +80,14 @@ export class WTransformControl extends TransformControls {
             this.add(distanceLabel);
             this.add(line);
             this.#rayLines.push({ line, direction: directions[i], distanceLabel: distanceLabel });
+
+            this.addEventListener('objectChange', () => {
+                const obj = this.object;
+
+                if (obj?.userData?.dimensions && obj instanceof Furniture) {
+                    obj.onResize();
+                }
+            });
         }
 
         this.#snappingThresh = THREE.MathUtils.degToRad(10);
@@ -86,6 +96,12 @@ export class WTransformControl extends TransformControls {
         this.#rotationLabel = this.#createLabel('');
         this.#rotationLabel.visible = false;
         this.add(this.#rotationLabel);
+
+        this.#sizeLabels = [];
+        for (let i = 0; i < 4; i++) {
+            const sizeLabel = this.#createLabel('');
+            this.add(sizeLabel);
+        }
 
         this.setTranslationSnap(0.1);
         this.#recolorArrows();
@@ -126,6 +142,7 @@ export class WTransformControl extends TransformControls {
 
         super.attach(otherObject);
         this.#handleGizmoModes(this.mode);
+        this.#updateSizeHandle();
     }
 
     detach() {
@@ -185,8 +202,6 @@ export class WTransformControl extends TransformControls {
         this.setSize(size);
     }
 
-
-
     deleteObject() {
         if (!this.object)
             return;
@@ -220,39 +235,12 @@ export class WTransformControl extends TransformControls {
         }
 
         const origin = this.object.position.clone();
-        origin.y += FLOOR_OFFSET;
+        origin.y += FLOOR_OFFSET; // the rayCaster started to cast the floor on 0 y coordinate
 
         this.#rayLines.forEach(({ line, direction, distanceLabel }) => {
             const rotatedDirection = direction.clone().applyQuaternion(this.object.quaternion).normalize();
-            const raycaster = new THREE.Raycaster(origin, rotatedDirection, 0, MAX_DISTANCE);
 
-            raycaster.layers.set(3); // TODO: jo lenne a raycastra hasznalt layereket valahogy enumkent kezelni mert neha nem tudom kovetni...
-            const targets = furniture.filter(obj => obj !== this.object);// --->
-            targets.push(...placedWalls);                               // ----> union of the walls and the furnitures
-
-            const intersects = raycaster.intersectObjects(targets, true);
-
-            let endPoint;
-            if (intersects.length > 0) {
-                if (intersects[0].object.name === "boundingBox"){
-                    intersects[0].object.visible = true;
-                    this.#highlightedBoxes.push(intersects[0]);
-                }
-                endPoint = intersects[0].point;
-                line.visible = true;
-                distanceLabel.visible = true;
-
-                const positions = line.geometry.attributes.position.array;
-                positions[3] = intersects[0].point.x
-                positions[4] = intersects[0].point.y
-                positions[5] = intersects[0].point.z
-            } else {
-                endPoint = origin.clone().add(rotatedDirection.clone().multiplyScalar(MAX_DISTANCE));
-                line.visible = false;
-                distanceLabel.visible = false;
-            }
-
-            let dimensions = this.object.userData.dimensions;
+            const dimensions = this.object.userData.dimensions;
 
             const localOffset = new THREE.Vector3(
                 (dimensions.X / 2) * Math.sign(direction.x),
@@ -260,9 +248,32 @@ export class WTransformControl extends TransformControls {
                 (dimensions.Z / 2) * Math.sign(direction.z)
             );
 
-            // rotate offset to match object orientation
             const rotatedOffset = localOffset.applyQuaternion(this.object.quaternion);
             const start = origin.clone().add(rotatedOffset);
+
+            const raycaster = new THREE.Raycaster(start, rotatedDirection, 0, MAX_DISTANCE);
+
+            raycaster.layers.set(3);
+
+            const targets = furniture.filter(obj => obj !== this.object);
+            targets.push(...placedWalls);
+
+            const intersects = raycaster.intersectObjects(targets, true);
+
+            let endPoint;
+            if (intersects.length > 0) {
+                if (intersects[0].object.name === "boundingBox") {
+                    intersects[0].object.visible = true;
+                    this.#highlightedBoxes.push(intersects[0]);
+                }
+                endPoint = intersects[0].point;
+                line.visible = true;
+                distanceLabel.visible = true;
+            } else {
+                endPoint = start.clone().add(rotatedDirection.clone().multiplyScalar(MAX_DISTANCE));
+                line.visible = false;
+                distanceLabel.visible = false;
+            }
 
             line.geometry.setPositions([
                 start.x, start.y, start.z,
@@ -279,7 +290,7 @@ export class WTransformControl extends TransformControls {
     #recolorArrows() {
         this._gizmo.gizmo.translate.children.splice(1, 1); // remove the negative side arrows
         this._gizmo.gizmo.translate.children.splice(6, 1);
-        this._gizmo.gizmo.translate.children.splice(3, 1); // idk, but it works..
+        this._gizmo.gizmo.translate.children.splice(3, 1); // idk y, but it works...
 
         if (this.children[0]) {
             this.children[0].traverse((child) => {
@@ -352,6 +363,10 @@ export class WTransformControl extends TransformControls {
 
     #updateRotationLabel() {
         this.#rotationLabel.position.copy(this.object.position.clone());
+    }
+
+    #updateSizeHandle() {
+        //TODO
     }
 
     #handleRotation = () => {

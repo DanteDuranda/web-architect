@@ -213,14 +213,18 @@ export class CatalogItem {
      * @param roomType
      * @param gizmoType
      * @param resizable
+     * @param sizeLimits
      */
-    constructor(id, type, name, roomType, gizmoType, resizable) {
+    constructor(id, type, name, roomType, gizmoType, resizable, sizeLimits) {
         this.catalogId = id;
         this.type = type;
         this.name = name;
+
         this.roomType = roomType;
         this.gizmoType = gizmoType;
+
         this.resizable = resizable;
+        this.sizeLimits = sizeLimits;
 
         this.category = id.split('-')[0];
         this.imageSrc = `res/image/${this.category}/${id}.png`;
@@ -277,11 +281,23 @@ class FurnitureCatalog extends Catalog {
                 const type = item.getAttribute("type");
                 const name = item.getElementsByTagName("Name")[0].textContent;
                 const roomType = item.getElementsByTagName("RoomType")[0].textContent;
+
                 const gizmoType = item.getElementsByTagName("GizmoType")[0].textContent;
                 const resizableTag = item.getElementsByTagName("Resizable")[0];
-                const resizable = resizableTag.textContent.trim() === "true";
+                const isResizable = resizableTag.textContent.trim() === "true";
+                let sizeLimits = null;
+                if (isResizable) {
+                    sizeLimits = {
+                        minX: parseFloat(resizableTag.getAttribute("minX")),
+                        maxX: parseFloat(resizableTag.getAttribute("maxX")),
+                        minZ: parseFloat(resizableTag.getAttribute("minZ")),
+                        maxZ: parseFloat(resizableTag.getAttribute("maxZ")),
+                        minY: parseFloat(resizableTag.getAttribute("minY")),
+                        maxY: parseFloat(resizableTag.getAttribute("maxY"))
+                    };
+                }
 
-                const catalogItem = new CatalogItem(id, type, name, roomType, gizmoType, resizable);
+                const catalogItem = new CatalogItem(id, type, name, roomType, gizmoType, isResizable, sizeLimits);
                 const catalogItemDomElement = this.#createElement(catalogItem);
                 catalogContainer.appendChild(catalogItemDomElement);
 

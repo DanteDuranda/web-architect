@@ -57,6 +57,7 @@ class Furniture extends WObject {
                 }
             });
 
+            this.convertResizeLimits();
         }, undefined, (error) => {
             console.error("unable to load the model", error);
         });
@@ -101,13 +102,58 @@ class Furniture extends WObject {
         this.add(this.userData.boundingWireframe);
     }
 
-    handleAttachDetach(attachState) //TODO: igy mar lehet ez itt tulzas, de hatha irok meg bele valamit
+    updateFurnitureDimensions() {
+        const box = new THREE.Box3().setFromObject(this);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        this.dimensions = {
+            X: parseFloat(size.x.toFixed(2)),
+            Y: parseFloat(size.y.toFixed(2)),
+            Z: parseFloat(size.z.toFixed(2))
+        };
+    }
+
+    handleAttachDetach(attachState) //TODO: igy mar lehet ez itt tulzas, de hatha irni kell ide meg valamit
     {
         this.toggleHighlight(attachState);
     }
 
     toggleHighlight(highlightState) {
         this.userData.boundingWireframe.visible = highlightState;
+    }
+
+    convertResizeLimits() {
+        const baseBox = new THREE.Box3().setFromObject(this.userData.model);
+        const baseSize = new THREE.Vector3();
+        baseBox.getSize(baseSize);
+
+        if (!this.catalogItem.sizeLimits || baseSize.x === 0 || baseSize.z === 0 || baseSize.y === 0) {
+            return null;
+        }
+
+        const dimLimits = this.catalogItem.sizeLimits;
+
+        dimLimits.minX = dimLimits.minX / baseSize.x;
+        dimLimits.maxX = dimLimits.maxX / baseSize.x;
+        dimLimits.minZ = dimLimits.minZ / baseSize.z;
+        dimLimits.maxZ = dimLimits.maxZ / baseSize.z;
+        dimLimits.minY = dimLimits.minY / baseSize.y;
+        dimLimits.maxY = dimLimits.maxY / baseSize.y;
+    }
+
+    onResize() {
+        const limits = this.catalogItem.sizeLimits;
+
+        if (limits) {
+            this.scale.x = Math.min(limits.maxX, Math.max(limits.minX, this.scale.x));
+            this.scale.y = Math.min(limits.maxY, Math.max(limits.minY, this.scale.y));
+            this.scale.z = Math.min(limits.maxZ, Math.max(limits.minZ, this.scale.z));
+
+            //console.log(`x=${obj.scale.x.toFixed(2)}, z=${obj.scale.z.toFixed(2)}, y=${obj.scale.y.toFixed(2)}`);
+        }
+
+        this.updateFurnitureDimensions();
     }
 
     onDelete() {
