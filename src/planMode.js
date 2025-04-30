@@ -234,7 +234,7 @@ export class FloorGenerator {
         return area > 0;  // clockwise if positive and counterclockwise if negative, the name of the function is inverted bc of the screen coordinates are also inverted
     }
 
-    // A* algorithm for create a room from the existing walls + the new walls
+    /*// A* algorithm for create a room from the existing walls + the new walls
     static findShortestPathOnWalls(newPoligonStart, newPoligonEnd, placedWalls) {
         let openSet = new Map();  // unexplored points, sorted by estimated cost
         let cameFrom = new Map(); // stores the shortest path backtracking
@@ -309,17 +309,15 @@ export class FloorGenerator {
                 sources.push(wall);
                 /*if (this.debugEnabled)
                     this.drawLine(newPoligonStart, wall.p2);*/
-            } else if (wall.p2.equals(newPoligonStart)) {
+            /*} else if (wall.p2.equals(newPoligonStart)) {
                 sources.push(wall);
                 /*if (this.debugEnabled)
                     this.drawLine(newPoligonStart, wall.p1);*/
-            }
+            /*}
         }
 
         return sources;
-    }
-
-
+    }*/
 
     drawLine(start, end) {
         let material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line

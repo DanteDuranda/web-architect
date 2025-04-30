@@ -11,6 +11,7 @@ import {WTransformControl} from "./WTransformControl.js";
 import {CSS2DRenderer} from 'CSS2DRenderer';
 import {Telemetry} from "./Ui2d.js";
 import {WinDoor} from "./WinDoor.js";
+import {Room} from "./Room.js";
 
 const canvas = document.querySelector('canvas');
 
@@ -34,7 +35,6 @@ let wTransformControls;
 
 let wallStartPoint;
 let distanceLabel;
-let placedWalls = [];
 let isPlacingWall = false;
 let wallPlacingEnabled = false;
 let startPoint = new THREE.Vector3(); // starting point of wall placing
@@ -208,17 +208,33 @@ document.addEventListener('wallPlacingToggled', (event) => {
 document.addEventListener("addFurnitureRequested", (event) => {
     const { catalogItem } = event.detail;
     const furnitureToAdd = new Furniture(catalogItem, ANISOTROPY_MAX);
-    ObjectFilter.addedFurnitures.push(furnitureToAdd)
+    ObjectFilter.addByInstance(furnitureToAdd)
     scene.add(furnitureToAdd);
 });
 
 orbControlOrtho.addEventListener("change", manageZoomInPlanMode);
 
+window.addEventListener("floorRemoved", (event) => {
+    const floor = event.detail.floor;
+
+    if (floor && floor.parent) {
+        floor.parent.remove(floor);
+    }
+});
+
 function generateFloor() {
+    Wall.updateCornersVisibility(ObjectFilter.placedWalls);
+
+    ObjectFilter.placedWalls.forEach(placedWall => {
+        newWalls.forEach(newWall => {
+            placedWall.subtractWallGeometry(newWall);
+        })
+    })
+
     if (newCornerPoints.length < 2) return; // need at least 2 points to form a line
 
     if (!newCornerPoints.at(0).equals(newCornerPoints.at(newCornerPoints.length-1))) {
-        let start = newCornerPoints.at(0);
+        /*let start = newCornerPoints.at(0);
         let end = newCornerPoints.at(newCornerPoints.length-1);
         let pathBetween = FloorGenerator.findShortestPathOnWalls(start, end, placedWalls);
         pathBetween.pop(); // remove last and
@@ -226,14 +242,17 @@ function generateFloor() {
 
         if(pathBetween.size !== 0){
             newCornerPoints.unshift(...pathBetween);
-        }
+        }*/
+        alert("Start and end points does not matches.");
     }
 
     let floorGenerator = new FloorGenerator(debugEnabled);
-
-    scene.add(floorGenerator.generateFloor(newCornerPoints));
+    const floor = floorGenerator.generateFloor(newCornerPoints);
+    scene.add(floor);
     newCornerPoints = [];
-    placedWalls.push(...newWalls);
+    ObjectFilter.addByInstance(newWalls);
+
+    ObjectFilter.addByInstance(new Room(newWalls, floor));
 
     needToUpdateWinDoorCSG = true;
     newWalls = [];
@@ -246,7 +265,7 @@ function activatePlanMode() {
 
     orbControlOrtho.enabled = true;
     orbControlPersp.enabled = false;
-    placedWalls.forEach((wall) => {
+    ObjectFilter.placedWalls.forEach((wall) => {
         wall.visible = true;
     });
     crosshair.style.opacity = 0;
@@ -307,10 +326,12 @@ function onMouseLeftClick(event) {
 function onMouseRightClick(event) {
     event.preventDefault(); // disables the browsers context menu
 
+    console.log(ObjectFilter.placedWalls); // debug only
+
     if(clickSuppressed)
         return;
 
-    if (isPlanModeActive) {
+    if (isPlanModeActive && isPlacingWall) {
         exitWallPlacement();
         generateFloor();
         startPoint = new THREE.Vector3();
@@ -534,9 +555,9 @@ function updateWallVisibility() {
 
     raycaster.setFromCamera(screenCenter, cameraPersp);
 
-    let intersects = raycaster.intersectObjects(placedWalls, true);
+    let intersects = raycaster.intersectObjects(ObjectFilter.placedWalls, true);
 
-    placedWalls.forEach((wall) => {
+    ObjectFilter.placedWalls.forEach((wall) => {
         wall.toggleVisibility(true);
     });
 
@@ -554,7 +575,7 @@ function animate() {
     if (wTransformControls.object && wTransformControls.object.name !== "wallGeometry")
     {
         wTransformControls.updateGizmoSize();
-        wTransformControls.updateRayLines(ObjectFilter.addedFurnitures, placedWalls);
+        wTransformControls.updateRayLines(ObjectFilter.addedFurnitures, ObjectFilter.placedWalls);
     }
 
     requestAnimationFrame(animate);

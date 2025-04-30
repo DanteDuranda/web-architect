@@ -32,7 +32,7 @@ class Wall extends WObject {
 
         this.userData = {
             catalogItem: null,
-            dimensions: {"wallWidth": wallWidth, "wallHeight": wallHeight, "wallLength": -1},
+            dimensions: {"wallWidth": wallWidth, "wallHeight": wallHeight, "wallLength": Number(start.distanceTo(end).toFixed(2))},
             model: null,
             boundingBox: null,
             boundingWireframe: null,
@@ -41,7 +41,7 @@ class Wall extends WObject {
             originalWallGeometry: null
         };
 
-        this.pointIndicators = [] // redundant now...
+        this.pointIndicators = []
 
         this.cylinder1 = ThreeGeometry.CreateCylinder(wallWidth / 2, wallHeight, color);
         this.cylinder1.name = "corner";
@@ -119,6 +119,33 @@ class Wall extends WObject {
         });
     }
 
+    subtractWallGeometry(wall) {
+        //this.resetWallGeom();
+
+        const currentWall = this.wallGeometry;
+        const newWall = wall.wallGeometry;
+
+        currentWall.updateMatrix()
+        newWall.updateMatrix()
+
+        if (!currentWall || !newWall) {
+            return;
+        }
+
+        const bspCurrentWall = CSG.fromMesh(currentWall);
+        const bspNewWall = CSG.fromMesh(newWall);
+
+        const bspResult = bspCurrentWall.subtract(bspNewWall);
+
+        const resultMesh = CSG.toMesh(bspResult, currentWall.matrixWorld, currentWall.material);
+
+        currentWall.geometry.dispose();
+        currentWall.geometry = resultMesh.geometry;
+        currentWall.geometry.needsUpdate = true;
+
+        console.log("Wall geometry successfully updated.");
+    }
+
     toggleHighlight(highLightState) {
         this.isHighlighted = highLightState;
         this.wallGeometry.material = this.isHighlighted ? HIGHLIGHT_MATERIAL : this.originalMaterial;
@@ -179,6 +206,33 @@ class Wall extends WObject {
         this.pointIndicators.length = 0;
 
         this.parent?.remove(this);
+    }
+
+    static updateCornersVisibility(placedWalls) {
+        return; // for testing purposes disabled
+
+        placedWalls.forEach(wall => {
+            wall.pointIndicators.forEach(indicator => {
+                indicator.visible = true;
+            });
+        });
+
+        // map to store unique (horizontal) positions
+        const pointMap = new Map();
+
+        placedWalls.forEach(wall => {
+            wall.pointIndicators.forEach(indicator => {
+                const pos = indicator.position;
+                const key = `${pos.x.toFixed(5)}_${pos.z.toFixed(5)}`;
+
+                if (!pointMap.has(key)) {
+                    // first indicator at this point
+                    pointMap.set(key, indicator);
+                } else {
+                    indicator.visible = false;
+                }
+            });
+        });
     }
 
     get catalogItem() {
