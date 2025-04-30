@@ -65,7 +65,7 @@ export class WTransformControl extends TransformControls {
 
         this.isDragging = false;
 
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) { // 4 horizontal axis aligned line
             const geometry = new LineGeometry();
             geometry.setPositions([0, 0, 0, 0, 0, 0]);
 
@@ -192,6 +192,8 @@ export class WTransformControl extends TransformControls {
             return;
 
         const attachedObject = this.object;
+        const type = attachedObject.parent.name;
+
         this.detach();
 
         if (attachedObject.parent) {
@@ -199,7 +201,8 @@ export class WTransformControl extends TransformControls {
         }
 
         attachedObject.onDelete();
-        ObjectFilter.removeFurniture(attachedObject); // issue #7 The user found a bug which occurred when he put down two furnitures and deleted one of them. The other object still measured the distance from the deleted object, wich was invisible.
+
+        ObjectFilter.removeByInstance(attachedObject); // issue #7 The user found a bug which occurred when he put down two furnitures and deleted one of them. The other object still measured the distance from the deleted object, wich was invisible.
     }
 
     updateRayLines(furniture, placedWalls) {
