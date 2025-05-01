@@ -2,6 +2,29 @@ import {Wall} from "./Wall.js";
 import {Furniture} from "./Furniture.js";
 import {Room} from "./Room.js";
 
+export class AppState {
+    static instance = null;
+
+
+
+    constructor() {
+        if (AppState.instance) {
+            return AppState.instance;
+        }
+
+        this.history = [];
+
+        AppState.instance = this;
+    }
+
+    static getState() {
+        if (!AppState.instance) {
+            AppState.instance = new AppState();
+        }
+        return AppState.instance;
+    }
+}
+
 /**
  * @class ObjectFilter
  * @description Static class that manages a collection of furnitures.
@@ -85,5 +108,3 @@ export class ObjectFilter {
         }
     }
 }
-
-export default ObjectFilter;

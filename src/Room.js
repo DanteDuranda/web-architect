@@ -1,4 +1,7 @@
 import {WObject} from "./WObject.js";
+import CSG from "../THREE-CSGMesh-master/three-csg.js";
+
+const FLOOR_HEIGHT = 0.1;
 
 export class Room extends WObject {
 
@@ -67,6 +70,46 @@ export class Room extends WObject {
                 this.floor.material.dispose();
             }
         }
+    }
+
+    subtractFloorGeometry(floor) { // TODO: ez itt meg nem ugy megy ahogy kenexd
+        const currentFloor = this.floor;
+        const newFloor = floor;
+
+        console.log(currentFloor.geometry.index);
+        console.log(currentFloor.geometry.attributes.position);
+
+        console.log(newFloor.geometry.index);
+        console.log(newFloor.geometry.attributes.position);
+
+        if (!currentFloor || !newFloor) return;
+        if (!currentFloor.geometry || !newFloor.geometry) return;
+
+        if (
+            !currentFloor.geometry.attributes?.position ||
+            !newFloor.geometry.attributes?.position
+        ) {
+            console.warn("Invalid floor geometry for CSG subtraction.");
+            return;
+        }
+
+        currentFloor.updateMatrix();
+        newFloor.updateMatrix();
+
+        const bspCurrent = CSG.fromMesh(currentFloor);
+        const bspOther = CSG.fromMesh(newFloor);
+
+        const bspResult = bspCurrent.subtract(bspOther);
+
+        const resultMesh = CSG.toMesh(
+            bspResult,
+            currentFloor.matrixWorld,
+            currentFloor.material
+        );
+
+        currentFloor.geometry.dispose();
+        currentFloor.geometry = resultMesh.geometry;
+        currentFloor.geometry.needsUpdate = true;
     }
 
     get area() {

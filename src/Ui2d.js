@@ -22,6 +22,7 @@ export class Telemetry {
 
         if (now - this.lastUpdateT >= 1000) { // updates per sec
             const fps = this.frameCount;
+
             this.frameCount = 0;
             this.lastUpdateT = now;
 

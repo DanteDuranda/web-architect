@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import CSG from "../THREE-CSGMesh-master/three-csg.js";
 import {OrbitControls} from 'OrbitControls';
 import {FloorGenerator, PlanCursor, PlanLabel} from "./planMode.js";
-import { ObjectFilter } from "./AppState.js";
+import { AppState, ObjectFilter } from "./AppState.js";
 import {Furniture} from "Furniture";
 import {SideBar} from "./UiControl.js";
 import {Wall} from "Wall";
@@ -12,8 +12,11 @@ import {CSS2DRenderer} from 'CSS2DRenderer';
 import {Telemetry} from "./Ui2d.js";
 import {WinDoor} from "./WinDoor.js";
 import {Room} from "./Room.js";
+import {ThreeGeometry} from "./ThreeGeometry.js";
 
 const canvas = document.querySelector('canvas');
+
+AppState.getState();
 
 let scene, renderer, ANISOTROPY_MAX, cSS2DRenderer, gridHelperM, gridHelperDm, gridHelperCm;
 
@@ -47,17 +50,18 @@ const debugEnabled = true;
 
 let cursorPlane;
 
-let isClickSuppressed = false;
 let needToUpdateWinDoorCSG = false;
 
 init();
 Telemetry.createTelemetryDisplay();
 animate();
 let mouseDownPosition = { x: 0, y: 0 };
-let clickSuppressed = false;
+
+let isClickSuppressed = false;
+
 canvas.addEventListener('mousedown', (event) => {
     mouseDownPosition = { x: event.clientX, y: event.clientY };
-    clickSuppressed = false;
+    isClickSuppressed = false;
 });
 
 canvas.addEventListener('mouseup', (event) => {
@@ -66,7 +70,7 @@ canvas.addEventListener('mouseup', (event) => {
     const movementThreshold = 5; // pixels
 
     if (dx > movementThreshold || dy > movementThreshold) {
-        clickSuppressed = true;
+        isClickSuppressed = true;
     }
 });
 
@@ -234,25 +238,21 @@ function generateFloor() {
     if (newCornerPoints.length < 2) return; // need at least 2 points to form a line
 
     if (!newCornerPoints.at(0).equals(newCornerPoints.at(newCornerPoints.length-1))) {
-        /*let start = newCornerPoints.at(0);
-        let end = newCornerPoints.at(newCornerPoints.length-1);
-        let pathBetween = FloorGenerator.findShortestPathOnWalls(start, end, placedWalls);
-        pathBetween.pop(); // remove last and
-        pathBetween.shift(); // remove first, because those are already in the newCornerPoints
-
-        if(pathBetween.size !== 0){
-            newCornerPoints.unshift(...pathBetween);
-        }*/
         alert("Start and end points does not matches.");
     }
 
     let floorGenerator = new FloorGenerator(debugEnabled);
-    const floor = floorGenerator.generateFloor(newCornerPoints);
-    scene.add(floor);
+    const floorMesh = ThreeGeometry.createExtrudedFloor(newCornerPoints);
+
+    ObjectFilter.placedRooms.forEach(room => {
+        room.subtractFloorGeometry(floorMesh);
+    })
+
+    scene.add(floorMesh);
     newCornerPoints = [];
     ObjectFilter.addByInstance(newWalls);
 
-    ObjectFilter.addByInstance(new Room(newWalls, floor));
+    ObjectFilter.addByInstance(new Room(newWalls, floorMesh));
 
     needToUpdateWinDoorCSG = true;
     newWalls = [];
@@ -268,8 +268,14 @@ function activatePlanMode() {
     ObjectFilter.placedWalls.forEach((wall) => {
         wall.visible = true;
     });
+
     crosshair.style.opacity = 0;
+
     wTransformControls.switchCamera(cameraOrtho);
+
+    ObjectFilter.placedWalls.forEach((wall) => {
+        wall.setLengthLabelVisible(true);
+    })
 
     isPlanModeActive = true;
 
@@ -286,10 +292,17 @@ function activateDesignMode() {
     crosshair.style.opacity = 0.2;
     scene.remove(planCursor.cursorGroup);
     canvas.style.cursor = 'default';
+
     sideBar.isWallPlacingActive = false;
+
     orbControlOrtho.enabled = false;
     orbControlPersp.enabled = true;
+
     wTransformControls.switchCamera(cameraPersp);
+
+    ObjectFilter.placedWalls.forEach((wall) => {
+        wall.setLengthLabelVisible(false);
+    })
 
     isPlanModeActive = false;
 
@@ -298,12 +311,12 @@ function activateDesignMode() {
 
 
 function onMouseLeftClick(event) {
-    if (clickSuppressed)
+    if (isClickSuppressed)
         return;
 
     if (isPlanModeActive && wallPlacingEnabled) {
         wallPlaceClick(event);
-    } else if (true) { //TODO:: ezt kivenni h orthoval is selectelhessek
+    } else if (true) { //TODO:: ezt kivenni h orthoval is selectelhessek DEPRECATED
         let intersects = getIntersects(event, null, 1);
 
         const maxDepth = Math.min(intersects.length, 3); //TODO: raycastert kikene szervezni mostmar...
@@ -326,9 +339,9 @@ function onMouseLeftClick(event) {
 function onMouseRightClick(event) {
     event.preventDefault(); // disables the browsers context menu
 
-    console.log(ObjectFilter.placedWalls); // debug only
+    // console.log(ObjectFilter.placedWalls); // debug only
 
-    if(clickSuppressed)
+    if(isClickSuppressed)
         return;
 
     if (isPlanModeActive && isPlacingWall) {
