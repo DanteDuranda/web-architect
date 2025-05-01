@@ -54,10 +54,7 @@ export class Room extends WObject {
     }
 
     deleteFloor() {
-        const event = new CustomEvent("floorRemoved", {
-            detail: { floor: this.floor },
-        });
-        window.dispatchEvent(event);
+        this.floor.parent.remove(this.floor);
 
         if (this.floor.geometry) {
             this.floor.geometry.dispose();
