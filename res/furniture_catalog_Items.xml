@@ -9,6 +9,6 @@
         <Name>Legkomolyabb asztal</Name>
         <RoomType>office</RoomType>
         <GizmoType>horizontal</GizmoType>
-        <Resizable>false</Resizable>
+        <Resizable minX="0.8" maxX="2" minY="0.4" maxY="1.2" minZ="0.5" maxZ="0.8">true</Resizable>
     </CatalogItem>
 </Catalog>

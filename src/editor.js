@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import CSG from "../THREE-CSGMesh-master/three-csg.js";
 import {OrbitControls} from 'OrbitControls';
-import {FloorGenerator, PlanCursor} from "./planMode.js";
+import {FloorGenerator, PlanCursor, PlanLabel} from "./planMode.js";
 import { ObjectFilter } from "./AppState.js";
 import {Furniture} from "Furniture";
 import {SideBar} from "./UiControl.js";
@@ -383,7 +383,7 @@ function wallPlaceClick(event) {
         // finalize the wall placement
         const finalizedWall = updateWall(tempWallVisualizer, startPoint, point, true);
 
-        let testWall = new Wall(finalizedWall, startPoint, point, sideBar.wallWidth, sideBar.wallHeight, 0x422800);
+        let testWall = new Wall(finalizedWall, startPoint, point, sideBar.wallWidth, sideBar.wallHeight, 0x422800, distanceLabel);
         newWalls.push(testWall);
         scene.add(testWall);
 
@@ -396,6 +396,7 @@ function wallPlaceClick(event) {
 function resetTempWall() {
     if (tempWallVisualizer) {
         scene.remove(tempWallVisualizer);
+        scene.remove(distanceLabel);
         tempWallVisualizer.geometry.dispose();
         tempWallVisualizer = null;
     }
@@ -421,29 +422,15 @@ function wallPlacerMouseMove(event) {
         scene.add(tempWallVisualizer);
 
         if (!distanceLabel) {
-            distanceLabel = createDistanceLabel();
-            scene.add(distanceLabel.sprite);
+            distanceLabel = PlanLabel.createLabel();
+            scene.add(distanceLabel);
         }
     } else {
         // update the wall and its label while the mouse moves
         updateWall(tempWallVisualizer, startPoint, point, false);
-        updateDistanceLabel(distanceLabel, distance);
+        PlanLabel.updateLabel(distanceLabel, startPoint, point, distance);
     }
 }
-
-
-function updateDistanceLabel({ context, texture, sprite }, distance) {
-    context.clearRect(0, 0, 256, 64);
-    context.fillText(`${distance.toFixed(2)} m`, 128, 32); // Center text
-    texture.needsUpdate = true;
-
-    sprite.position.set(
-        tempWallVisualizer.position.x,
-        sideBar.wallHeight + 1,
-        tempWallVisualizer.position.z
-    );
-}
-
 
 function updateWall(wall, start, end, click = false) {
     const wallLength = start.distanceTo(end);
@@ -466,25 +453,6 @@ function updateWall(wall, start, end, click = false) {
 }
 
 
-function createDistanceLabel() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-
-    const context = canvas.getContext('2d');
-    context.font = '30px Arial';
-    context.fillStyle = '#FAE8DE';
-    context.textAlign = 'center';
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    context.fillText('0.0 m', canvas.width / 2, canvas.height / 2);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-    const sprite = new THREE.Sprite(material);
-    sprite.scale.set(4, 1, 4); // Adjust scale based on your scene
-    return { sprite, canvas, context, texture };
-}
 
 function getIntersects(event, searchObject = null, layer = 0) {
     let mouse = new THREE.Vector2();

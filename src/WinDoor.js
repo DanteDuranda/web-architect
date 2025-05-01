@@ -28,15 +28,13 @@ class WinDoor extends THREE.Group {
         CSGGeometry.name = "csg";
         CSGGeometry.visible = false;
 
-        // Base glass
+        // glass
         const glassGeometry = new THREE.BoxGeometry(glassWidth, glassHeight, glassDepth);
         const windowGlass = new THREE.Mesh(glassGeometry, glassMaterial);
         windowGlass.position.set(0, 0, 0);
         windowGlass.name = "windowGlass";
         windowGlass.userData.root = this;
         this.add(windowGlass);
-
-        //this.add(wall);
 
         const parts = [
             { name: 'left', object: ThreeGeometry.CreateCube(0.1, 1.1, 0.1, 0xFFFFFFF) }, // 10cm 110cm 10cm
@@ -46,7 +44,7 @@ class WinDoor extends THREE.Group {
         ];
 
         this.userData = {
-            catalogItem: new CatalogItem("testWindow", "testWindow", "testWindow", "testWindow", "only_xy", true),
+            catalogItem: new CatalogItem("testWindow", "testWindow", "testWindow", "testWindow", "only_xy", true, null),
             dimensions: { "X": -1, "Y": -1, "Z": -1 },
             parts: [],
             centerCubeMesh: CSGGeometry,
@@ -220,8 +218,8 @@ class WinDoor extends THREE.Group {
         return this.userData.parts;
     }
 
-    set parts(value) {
-        this.userData.parts = value;
+    set parts(newParts) {
+        this.userData.parts = newParts;
     }
 
     get centerCubeMesh() {

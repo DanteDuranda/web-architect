@@ -48,7 +48,10 @@ export class ObjectFilter {
             room.roomWalls = room.roomWalls.filter(roomWall => roomWall !== wall);
 
             if(room.roomWalls.length < 1)
+            {
                 room.deleteFloor();
+                this.removeRoom();
+            }
         }
     }
 
