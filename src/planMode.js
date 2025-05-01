@@ -1,4 +1,34 @@
 import * as THREE from "three";
+import {CSS2DObject} from 'CSS2DRenderer';
+
+export class PlanLabel {
+    static createLabel() {
+        const element = document.createElement('div');
+        element.className = 'distance-label';
+        element.style.fontSize = '14px';
+        element.style.color = '#FAE8DE';
+        element.style.background = 'rgba(0, 0, 0, 0.6)';
+        element.style.padding = '2px 4px';
+        element.style.borderRadius = '4px';
+        element.style.whiteSpace = 'nowrap';
+        element.style.pointerEvents = 'none';
+        element.style.transform = 'translate(-50%, -50%)';
+
+        const labelObject = new CSS2DObject(element);
+        labelObject.position.set(0, 0, 0);
+
+        return labelObject ;
+    }
+
+
+    static updateLabel(label, startPoint, endPoint, distance) {
+        const distanceInCm = (distance * 100).toFixed(0);
+        label.element.textContent = `${distanceInCm}cm`;
+        const midPoint = new THREE.Vector3().addVectors(startPoint, endPoint).multiplyScalar(0.5);
+
+        label.position.set(midPoint.x, 0, midPoint.z);
+    }
+}
 
 export class PlanCursor {
     constructor(radius = 0.2, crossThickness = 0.05, crossLengthFactor = 10) {
@@ -98,7 +128,6 @@ export class PlanCursor {
             canvas.style.cursor = 'default';
         }
     }
-
 
     static cornerToPoint(point, wallWidth, wallHeight, color) {
         const radiusTop = wallWidth / 2;
@@ -233,91 +262,6 @@ export class FloorGenerator {
         }
         return area > 0;  // clockwise if positive and counterclockwise if negative, the name of the function is inverted bc of the screen coordinates are also inverted
     }
-
-    /*// A* algorithm for create a room from the existing walls + the new walls
-    static findShortestPathOnWalls(newPoligonStart, newPoligonEnd, placedWalls) {
-        let openSet = new Map();  // unexplored points, sorted by estimated cost
-        let cameFrom = new Map(); // stores the shortest path backtracking
-        let gScore = new Map();   // shortest known distance
-        let fScore = new Map();   // EXTIMATED total distance
-
-        // start point
-        gScore.set(newPoligonStart.toArray().toString(), 0);
-        fScore.set(newPoligonStart.toArray().toString(), this.heuristic(newPoligonStart, newPoligonEnd));
-        openSet.set(newPoligonStart.toArray().toString(), newPoligonStart);
-
-        while (openSet.size > 0) {
-            // find lowest f
-            let currentKey = [...openSet.keys()].reduce((a, b) =>
-                fScore.get(a) < fScore.get(b) ? a : b
-            );
-
-            let current = openSet.get(currentKey);
-
-            if (current.equals(newPoligonEnd)) {
-                return this.backTrackPath(cameFrom, current);
-            }
-
-            openSet.delete(currentKey);
-
-            let neighbors = this.getPossibleSources(current, placedWalls);
-            for (let wall of neighbors) {
-                let neighbor = wall.p1.equals(current) ? wall.p2 : wall.p1;
-                let neighborKey = neighbor.toArray().toString();
-
-                // g-score
-                let tentativeGScore = gScore.get(currentKey) + current.distanceTo(neighbor);
-
-                if (!gScore.has(neighborKey) || tentativeGScore < gScore.get(neighborKey)) {
-                    cameFrom.set(neighborKey, current);
-                    gScore.set(neighborKey, tentativeGScore);
-                    fScore.set(neighborKey, tentativeGScore + this.heuristic(neighbor, newPoligonEnd));
-
-                    if (!openSet.has(neighborKey)) {
-                        openSet.set(neighborKey, neighbor);
-                    }
-                }
-            }
-        }
-
-        return [];
-    }
-
-
-    static heuristic(a, b) {
-        return a.distanceTo(b); // euclidean distance
-    }
-
-    static backTrackPath(cameFrom, current) {
-        let path = [current];
-
-        while (cameFrom.has(current.toArray().toString())) {
-            current = cameFrom.get(current.toArray().toString());
-            path.unshift(current);
-        }
-
-        return path.reverse();
-    }
-
-    static getPossibleSources(newPoligonStart, placedWalls) {
-        let sources = [];
-
-        for (let i = 0; i < placedWalls.length; i++) {
-            let wall = placedWalls[i];
-
-            if (wall.p1.equals(newPoligonStart)) {
-                sources.push(wall);
-                /*if (this.debugEnabled)
-                    this.drawLine(newPoligonStart, wall.p2);*/
-            /*} else if (wall.p2.equals(newPoligonStart)) {
-                sources.push(wall);
-                /*if (this.debugEnabled)
-                    this.drawLine(newPoligonStart, wall.p1);*/
-            /*}
-        }
-
-        return sources;
-    }*/
 
     drawLine(start, end) {
         let material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line

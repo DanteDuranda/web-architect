@@ -12,7 +12,7 @@ const HIGHLIGHT_MATERIAL = new THREE.MeshBasicMaterial({
 });
 
 class Wall extends WObject {
-    constructor(wall, start, end, wallWidth, wallHeight, color=0x000000) {
+    constructor(wall, start, end, wallWidth, wallHeight, color=0x000000, lengthLabel) {
         super();
 
         this.p1 = start;
@@ -26,7 +26,7 @@ class Wall extends WObject {
         this.wallGeometry.layers.enable(1);
         this.wallGeometry.userData.root = this;
         this.add(this.wallGeometry);
-
+        this.add(lengthLabel);
         this.originalWallGeometry = this.wallGeometry.geometry.clone();
         this.originalMaterial = this.wallGeometry.material;
 
@@ -38,7 +38,8 @@ class Wall extends WObject {
             boundingWireframe: null,
             winDoors: [],
             isAttached: false,
-            originalWallGeometry: null
+            originalWallGeometry: null,
+            lengthLabel: lengthLabel
         };
 
         this.pointIndicators = []
@@ -239,10 +240,6 @@ class Wall extends WObject {
         return this.userData.catalogItem;
     }
 
-    set catalogItem(value) {
-        this.userData.catalogItem = value;
-    }
-
     get dimensions() {
         return this.userData.dimensions;
     }
@@ -290,11 +287,6 @@ class Wall extends WObject {
     set isAttached(value) {
         this.toggleHighlight(value);
         this.userData.isAttached = value;
-    }
-
-    #resetWallGeometry() {
-        this.wallGeometry.geometry.dispose();
-        this.wallGeometry.geometry = this.originalWallGeometry.clone();
     }
 }
 

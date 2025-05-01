@@ -3,9 +3,9 @@ import {TransformControls} from "TransformControls";
 import {LineGeometry} from "LineGeometry";
 import {LineMaterial} from "LineMaterial";
 import {Line2} from "Line2";
-import {CSS2DObject} from 'CSS2DRenderer';
 import { ObjectFilter } from "./AppState.js";
 import {Furniture} from "./Furniture.js";
+import { PlanLabel } from "./planMode.js";
 
 
 const FLOOR_OFFSET = 0.05;
@@ -31,7 +31,7 @@ const GizmoPresets = Object.freeze({
     HORIZONTAL: {
         translate: { x: true, y: false, z: true },
         rotate: { x: false, y: true, z: false },
-        scale: { x: true, y: false, z: true }
+        scale: { x: true, y: true, z: true } // to let the user resize the object on the Y axis
     },
 
     FULL: {
@@ -46,7 +46,7 @@ const GizmoPresets = Object.freeze({
         scale: { x: false, y: false, z: false }
     },
 
-    ONLY_XY: {
+    ONLY_XY: {  // used for windoors
         translate: { x: true, y: true, z: false },
         rotate: { x: true, y: true, z: false },
         scale: { x: true, y: true, z: false }
@@ -74,7 +74,7 @@ export class WTransformControl extends TransformControls {
             const line = new Line2(geometry, distanceLineMat);
             line.visible = false;
 
-            const distanceLabel = this.#createLabel('');
+            const distanceLabel = PlanLabel.createLabel('');
             distanceLabel.visible = false;
 
             this.add(distanceLabel);
@@ -93,15 +93,9 @@ export class WTransformControl extends TransformControls {
         this.#snappingThresh = THREE.MathUtils.degToRad(10);
         this.#snapAngle = THREE.MathUtils.degToRad(45);
 
-        this.#rotationLabel = this.#createLabel('');
+        this.#rotationLabel = PlanLabel.createLabel('');
         this.#rotationLabel.visible = false;
         this.add(this.#rotationLabel);
-
-        this.#sizeLabels = [];
-        for (let i = 0; i < 4; i++) {
-            const sizeLabel = this.#createLabel('');
-            this.add(sizeLabel);
-        }
 
         this.setTranslationSnap(0.1);
         this.#recolorArrows();
@@ -113,19 +107,12 @@ export class WTransformControl extends TransformControls {
         if(this.object)
             return;
 
-        /*if(this.object && this.object.userData.boundingWireframe)
-            this.object.userData.boundingWireframe.visible = false;
-        else if(this.object && this.object.name === "wallGeometry")
-            this.object.parent.toggleHighlight(false);*/ //TODO: tempor disabled || DEPRECATED
-
         if (otherObject.name === "Wall") {   //TODO: ez itt szerintem osszevonhato lesz lassan
             this.setSpace("world");
-            //otherObject.toggleHighlight(true);
             otherObject.handleAttachDetach(true);
         }
         else if (otherObject.name === "windoor") {    //TODO: ez itt szerintem osszevonhato lesz lassan
             this.setSpace("local");
-            //otherObject.toggleHighlight(true);
             otherObject.handleAttachDetach(true);
         }
         else { // furnitures from the catalog
@@ -207,7 +194,6 @@ export class WTransformControl extends TransformControls {
             return;
 
         const attachedObject = this.object;
-        const type = attachedObject.parent.name;
 
         this.detach();
 
@@ -235,51 +221,55 @@ export class WTransformControl extends TransformControls {
         }
 
         const origin = this.object.position.clone();
-        origin.y += FLOOR_OFFSET; // the rayCaster started to cast the floor on 0 y coordinate
+        origin.y += FLOOR_OFFSET;
 
         this.#rayLines.forEach(({ line, direction, distanceLabel }) => {
             const rotatedDirection = direction.clone().applyQuaternion(this.object.quaternion).normalize();
+            const raycaster = new THREE.Raycaster(origin, rotatedDirection, 0, MAX_DISTANCE);
 
-            const dimensions = this.object.userData.dimensions;
-
-            const localOffset = new THREE.Vector3(
-                (dimensions.X / 2) * Math.sign(direction.x),
-                0,
-                (dimensions.Z / 2) * Math.sign(direction.z)
-            );
-
-            const rotatedOffset = localOffset.applyQuaternion(this.object.quaternion);
-            const start = origin.clone().add(rotatedOffset);
-
-            const raycaster = new THREE.Raycaster(start, rotatedDirection, 0, MAX_DISTANCE);
-
-            raycaster.layers.set(3);
-
-            const targets = furniture.filter(obj => obj !== this.object);
-            targets.push(...placedWalls);
+            raycaster.layers.set(3); // TODO: jo lenne a raycastra hasznalt layereket valahogy enumkent kezelni mert neha nem tudom kovetni...
+            const targets = furniture.filter(obj => obj !== this.object);// --->
+            targets.push(...placedWalls);                               // ----> union of the walls and the furnitures
 
             const intersects = raycaster.intersectObjects(targets, true);
 
             let endPoint;
             if (intersects.length > 0) {
-                if (intersects[0].object.name === "boundingBox") {
+                if (intersects[0].object.name === "boundingBox"){
                     intersects[0].object.visible = true;
                     this.#highlightedBoxes.push(intersects[0]);
                 }
                 endPoint = intersects[0].point;
                 line.visible = true;
                 distanceLabel.visible = true;
+
+                const positions = line.geometry.attributes.position.array;
+                positions[3] = intersects[0].point.x
+                positions[4] = intersects[0].point.y
+                positions[5] = intersects[0].point.z
             } else {
-                endPoint = start.clone().add(rotatedDirection.clone().multiplyScalar(MAX_DISTANCE));
+                endPoint = origin.clone().add(rotatedDirection.clone().multiplyScalar(MAX_DISTANCE));
                 line.visible = false;
                 distanceLabel.visible = false;
             }
+
+            let dimensions = this.object.dimensions;
+            //console.log(dimensions);
+
+            const localOffset = new THREE.Vector3(
+                (dimensions.X / 2) * Math.sign(direction.x),
+                0,
+                (dimensions.Z / 2) * Math.sign(direction.z)
+            )
+
+            // rotate offset to match object orientation
+            const rotatedOffset = localOffset.applyQuaternion(this.object.quaternion);
+            const start = origin.clone().add(rotatedOffset);
 
             line.geometry.setPositions([
                 start.x, start.y, start.z,
                 endPoint.x, endPoint.y, endPoint.z
             ]);
-
             line.geometry.attributes.position.needsUpdate = true;
 
             const distance = start.distanceTo(endPoint).toFixed(2);
@@ -315,13 +305,13 @@ export class WTransformControl extends TransformControls {
         else
             gizmoType = this.object.userData.catalogItem.gizmoType;
 
-        const config = GizmoPresets[gizmoType?.toUpperCase()];
-        if (!config || !config[currentMode]) {
+        const gizmoVisibilityConfig = GizmoPresets[gizmoType?.toUpperCase()];
+        if (!gizmoVisibilityConfig || !gizmoVisibilityConfig[currentMode]) {
             console.error("undefined transform or gizmo mode", gizmoType, currentMode);
             return;
         }
 
-        const { x, y, z } = config[currentMode];
+        const { x, y, z } = gizmoVisibilityConfig[currentMode];
         this.showX = x;
         this.showY = y;
         this.showZ = z;
@@ -334,24 +324,6 @@ export class WTransformControl extends TransformControls {
             }
         });
         this.#highlightedBoxes = [];
-    }
-
-    #createLabel(text) {
-        const measurementDiv = document.createElement('div');
-        measurementDiv.className = 'measurementLabel';
-        measurementDiv.textContent = text;
-
-        measurementDiv.style.padding = '2px 6px';
-        measurementDiv.style.background = 'rgba(255, 165, 0, 0.8)';
-        measurementDiv.style.color = '#000';
-        measurementDiv.style.borderRadius = '4px';
-        measurementDiv.style.fontSize = '22px';
-        measurementDiv.style.fontWeight = 'bold';
-        measurementDiv.style.whiteSpace = 'nowrap';
-
-        const label = new CSS2DObject(measurementDiv);
-        label.visible = false;
-        return label;
     }
 
     #updateDistanceLabel(distanceLabel, distance, start, endPoint) {
