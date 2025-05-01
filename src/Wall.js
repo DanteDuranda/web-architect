@@ -121,17 +121,14 @@ class Wall extends WObject {
     }
 
     subtractWallGeometry(wall) {
-        //this.resetWallGeom();
-
         const currentWall = this.wallGeometry;
         const newWall = wall.wallGeometry;
 
         currentWall.updateMatrix()
         newWall.updateMatrix()
 
-        if (!currentWall || !newWall) {
+        if (!newWall|| !currentWall)
             return;
-        }
 
         const bspCurrentWall = CSG.fromMesh(currentWall);
         const bspNewWall = CSG.fromMesh(newWall);
@@ -143,8 +140,6 @@ class Wall extends WObject {
         currentWall.geometry.dispose();
         currentWall.geometry = resultMesh.geometry;
         currentWall.geometry.needsUpdate = true;
-
-        console.log("Wall geometry successfully updated.");
     }
 
     toggleHighlight(highLightState) {
@@ -206,7 +201,18 @@ class Wall extends WObject {
         });
         this.pointIndicators.length = 0;
 
+        this.userData.lengthLabel.parent?.remove(this.userData.lengthLabel);
+
+        if (this.userData.lengthLabel.element && this.userData.lengthLabel.element.parentNode)
+            this.userData.lengthLabel.element.parentNode.removeChild(this.userData.lengthLabel.element);
+
+        this.userData.lengthLabel.element = null;
+
         this.parent?.remove(this);
+    }
+
+    setLengthLabelVisible(visible) {
+        this.userData.lengthLabel.visible = visible;
     }
 
     static updateCornersVisibility(placedWalls) {
@@ -234,7 +240,7 @@ class Wall extends WObject {
                 }
             });
         });
-    }
+    } // Maybe DEPRECATED
 
     get catalogItem() {
         return this.userData.catalogItem;

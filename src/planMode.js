@@ -129,7 +129,7 @@ export class PlanCursor {
         }
     }
 
-    static cornerToPoint(point, wallWidth, wallHeight, color) {
+    cornerToPoint(point, wallWidth, wallHeight, color) {
         const radiusTop = wallWidth / 2;
         const radiusBottom = wallWidth / 2;
         const radialSegments = 32;
@@ -144,13 +144,15 @@ export class PlanCursor {
     }
 }
 
-
 export class FloorGenerator {
-    constructor(isDebugEnabled=false) { // TODO: debug visualization for earclipping algoruithm
+
+    constructor(isDebugEnabled=false) {
         this.isDebugEnabled = isDebugEnabled;
     }
 
-    generateFloor(points) {
+
+
+    /*generateFloor(points) { // TODO: DEPRECATED
         if (typeof points !== 'object' || points.length < 3) return;
 
         if (this.#isCounterClockwise(points)) {
@@ -166,27 +168,24 @@ export class FloorGenerator {
         const vertices = new Float32Array(points.length * 3); // need to convert bc THREE.js bufferGeometry
 
         for (let i = 0; i < points.length; i++) {
-
-            if (typeof points[i].x !== "number" || typeof points[i].y !== "number" || typeof points[i].z !== "number") {
-                console.log("found an invalid parameter - {generateFloor(points)}");
-                return;
-            }
-
             vertices[i * 3] = points[i].x;     // 0 * 3 = 0     ; 3 ...
             vertices[i * 3 + 1] = points[i].y; // 0 * 3 + 1 = 1 ; 4 ...
             vertices[i * 3 + 2] = points[i].z; // 0 * 3 + 2 = 2 ; 5 ...
         }
 
         floorGeometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-        floorGeometry.setIndex(triangleIndices);
+        floorGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(triangleIndices), 1));
+
+        /*let nx = normalattr.array[vp]; exception thrown here while csg operation
+        * its happened bc the geometry had no normal vectors, which is crucial for csg and lightning operations*/
+        /*floorGeometry.computeVertexNormals();
 
         floorMesh.position.y += 0.001;
 
         return floorMesh;
-    }
+    }*/
 
-
-    #earClippingTriangulation(points) {
+    /*#earClippingTriangulation(points) {
         let indices = [];
         let remainingPoints = points.map((p, i) => i); // store indices instead of removing objects
 
@@ -235,7 +234,6 @@ export class FloorGenerator {
         return true;
     }
 
-
     #pointInTriangle(testPoint, prev, curr, next) { // TODO: nagyon fontos lenne, hogy ez normálisan működjön...
         const d1 = this.#sign(testPoint, prev, curr);
         const d2 = this.#sign(testPoint, curr, next);
@@ -243,16 +241,13 @@ export class FloorGenerator {
         return (d1 >= 0 && d2 >= 0 && d3 >= 0) || (d1 <= 0 && d2 <= 0 && d3 <= 0);
     }
 
-
     #sign(point1, point2, point3) {
         return (point1.x - point3.x) * (point2.z - point3.z) - (point2.x - point3.x) * (point1.z - point3.z);
     }
 
-
     #isConvex(prev, curr, next) {
         return (curr.x - prev.x) * (next.z - prev.z) - (curr.z - prev.z) * (next.x - prev.x) >= 0;
     }
-
 
     #isCounterClockwise(points) { // Shoelace Formula || Gauss's Area Calculation
         let area = 0;
@@ -270,5 +265,5 @@ export class FloorGenerator {
         line.thickness = 2;
         line.position.y += 5;
         scene.add(line);
-    }
-}
+    }*/
+} // TODO: DEPRECATED
