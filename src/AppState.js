@@ -119,7 +119,7 @@ canvas.addEventListener("drop", (event) => {
     AppState.addFurnitureToScene(catalogItem, intersectedPosOnCursorPlane);
 });
 
-function onWindowResize() {
+function onWindowResize() { // TODO: mehetne AppState-be-be
     const aspect = window.innerWidth / window.innerHeight;
     cameraOrtho.left = -50 * aspect / 2;
     cameraOrtho.right = 50 * aspect / 2;
