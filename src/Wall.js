@@ -3,6 +3,7 @@ import { ThreeGeometry } from './ThreeGeometry.js';
 import { WinDoor } from "./WinDoor.js";
 import CSG from "../THREE-CSGMesh-master/three-csg.js";
 import {WObject} from "./WObject.js";
+import {AppState} from "./AppState.js";
 
 const HIGHLIGHT_MATERIAL = new THREE.MeshBasicMaterial({
     color: 0xAAAAAA,
@@ -114,7 +115,7 @@ class Wall extends WObject {
             const bspResult = bspWall.subtract(bspHole);
 
             const resultMesh = CSG.toMesh(bspResult, wall.matrixWorld, wall.material);
-            wall.geometry.dispose(); // dispose previous one before assigning new
+            wall.geometry.dispose(); // dispose first for safety
             wall.geometry = resultMesh.geometry;
             wall.geometry.needsUpdate = true;
         });
@@ -144,6 +145,8 @@ class Wall extends WObject {
 
     toggleHighlight(highLightState) {
         this.isHighlighted = highLightState;
+        HIGHLIGHT_MATERIAL.wireframe = AppState.debugEnabled;
+
         this.wallGeometry.material = this.isHighlighted ? HIGHLIGHT_MATERIAL : this.originalMaterial;
         this.pointIndicators[0].material = this.isHighlighted ? HIGHLIGHT_MATERIAL : this.originalMaterial;
         this.pointIndicators[1].material = this.isHighlighted ? HIGHLIGHT_MATERIAL : this.originalMaterial;

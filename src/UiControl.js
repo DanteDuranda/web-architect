@@ -1,3 +1,4 @@
+import {AppState, ObjectFilter} from "./AppState.js";
 
 export class SideBar {
     static catalogItems = [];
@@ -381,11 +382,17 @@ class FurnitureCatalog extends Catalog {
         button.style.backgroundImage = `url(${catalogItem.imageSrc})`;
         button.setAttribute("draggable", true);
 
+        // CLICK: fallback to placing at default height (e.g. 0,0,0)
         button.addEventListener("click", () => {
             const event = new CustomEvent("addFurnitureRequested", {
                 detail: { catalogItem: catalogItem }
             });
             document.dispatchEvent(event);
+        });
+
+        // DRAG: transfer the catalogItem data
+        button.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("application/json", JSON.stringify(catalogItem));
         });
 
         const label = document.createElement("p");
@@ -396,6 +403,7 @@ class FurnitureCatalog extends Catalog {
         container.appendChild(label);
         return container;
     }
+
 
     #failResponse(){
         const label = document.createElement("p");

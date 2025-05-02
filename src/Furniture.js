@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { FBXLoader } from "FBXLoader";
 import { WObject } from "./WObject.js";
+import {AppState} from "./AppState.js";
 
 const boundingBoxMaterial = new THREE.MeshBasicMaterial({
     opacity: 0.15,
@@ -30,6 +31,8 @@ class Furniture extends WObject {
 
         loader.load(fbxPath, (object) => {
             this.userData.model = object;
+
+            object.position.y += 0.1; // place above the floor
 
             object.traverse(child => {
                 child.userData.root = this;
@@ -75,37 +78,43 @@ class Furniture extends WObject {
         box.getSize(size);
 
         // in meters
-        this.dimensions = {
+        this.dimensions =
+        {
             "X": parseFloat(size.x.toFixed(2)), // width
             "Y": parseFloat(size.y.toFixed(2)), // height
             "Z": parseFloat(size.z.toFixed(2)), // depth
         };
 
-        this.originalDimensions = {
+        this.originalDimensions =
+        {
             X: size.x,
             Y: size.y,
             Z: size.z
         };
 
-        const geometry = new THREE.BoxGeometry(size.x+0.001, size.y+0.001, size.z+0.001);
-
+        const geometry = new THREE.BoxGeometry(size.x + 0.001, size.y + 0.001, size.z + 0.001); // to prevent texture clipping between the model and the bounding box
         const boundingBoxMesh = new THREE.Mesh(geometry, boundingBoxMaterial);
         const center = new THREE.Vector3();
 
         box.getCenter(center);
-        boundingBoxMesh.position.set(center.x, center.y, center.z);
+        this.worldToLocal(center);
 
         this.boundingBox = boundingBoxMesh;
+        this.boundingBox.position.copy(center);
         this.boundingBox.layers.set(3);
         this.boundingBox.name = "boundingBox";
         this.boundingBox.visible = false;
         this.add(this.boundingBox);
 
-        this.boundingWireframe = new THREE.Box3Helper(box, new THREE.Color(0xFFA500));
+        const edges = new THREE.EdgesGeometry(geometry);
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFFA500 });
+        const wireframe = new THREE.LineSegments(edges, lineMaterial);
+        this.boundingWireframe = wireframe;
+        this.boundingWireframe.position.copy(center);
         this.boundingWireframe.layers.set(2);
         this.boundingWireframe.name = "boundingWireframe";
         this.boundingWireframe.visible = false;
-        this.add(this.boundingWireframe);
+        this.add(wireframe);
     }
 
     handleAttachDetach(attachState) //TODO: igy mar lehet ez itt tulzas, de hatha irni kell ide meg valamit
@@ -141,7 +150,8 @@ class Furniture extends WObject {
             this.scale.y = Math.min(this.catalogItem.sizeLimits.maxY, Math.max(this.catalogItem.sizeLimits.minY, this.scale.y));
             this.scale.z = Math.min(this.catalogItem.sizeLimits.maxZ, Math.max(this.catalogItem.sizeLimits.minZ, this.scale.z));
 
-            //console.log(`x=${obj.scale.x.toFixed(2)}, z=${obj.scale.z.toFixed(2)}, y=${obj.scale.y.toFixed(2)}`);
+            if(AppState.debugEnabled)
+                console.log(`x=${this.scale.x.toFixed(2)}, z=${this.scale.z.toFixed(2)}, y=${this.scale.y.toFixed(2)}`);
         }
     }
 

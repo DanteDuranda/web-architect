@@ -78,13 +78,7 @@ function Init() {
     scene.add(AppState.wmouse.wTransformControls);
 }
 
-document.addEventListener("addFurnitureRequested", (event) => {
-    const { catalogItem } = event.detail;
-    const furnitureToAdd = new Furniture(catalogItem, ANISOTROPY_MAX);
-    furnitureToAdd.position.y += 0.1;
-    ObjectFilter.addByInstance(furnitureToAdd)
-    scene.add(furnitureToAdd);
-});
+window.addEventListener('resize', onWindowResize, false);
 
 document.addEventListener('wallPlacingToggled', (event) => {
     if (event.detail && AppState.isPlanModeActive) {
@@ -96,7 +90,34 @@ document.addEventListener('wallPlacingToggled', (event) => {
     }
 });
 
-window.addEventListener('resize', onWindowResize, false);
+document.addEventListener("addFurnitureRequested", (event) => {
+    const { catalogItem } = event.detail;
+    AppState.addFurnitureToScene(catalogItem);
+});
+
+canvas.addEventListener("dragover", (event) => {
+    event.preventDefault();
+});
+
+canvas.addEventListener("drop", (event) => {
+    event.preventDefault();
+
+    const data = event.dataTransfer.getData("application/json");
+    if (!data) return;
+
+    const catalogItem = JSON.parse(data);
+
+    const mouse = new THREE.Vector2(
+        (event.clientX / canvas.clientWidth) * 2 - 1,
+        -(event.clientY / canvas.clientHeight) * 2 + 1
+    );
+
+    const dragNDropCaster = new THREE.Raycaster();
+    dragNDropCaster.setFromCamera(mouse, cameraPersp);
+    const intersectedPosOnCursorPlane = dragNDropCaster.ray.intersectPlane(AppState.wmouse.cursorPlane, new THREE.Vector3());
+
+    AppState.addFurnitureToScene(catalogItem, intersectedPosOnCursorPlane);
+});
 
 function onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
@@ -143,6 +164,16 @@ export class AppState {
             renderer.render(scene, cameraPersp);
             cSS2DRenderer.render(scene, cameraPersp);
         }
+    }
+
+    static addFurnitureToScene(catalogItem, position = null) {
+        const furniture = new Furniture(catalogItem, ANISOTROPY_MAX);
+
+        if (position)
+            furniture.position.copy(position);
+
+        ObjectFilter.addByInstance(furniture);
+        scene.add(furniture);
     }
 
     static activatePlanMode() {

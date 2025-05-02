@@ -8,7 +8,7 @@ import {Furniture} from "./Furniture.js";
 import { PlanLabel } from "./planMode.js";
 
 
-const FLOOR_OFFSET = 0.05;
+const FLOOR_OFFSET = 0.2;
 const MAX_DISTANCE = 10;
 
 // will be applied using sign()
