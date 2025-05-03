@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { FBXLoader } from "FBXLoader";
+
+import { GLTFLoader } from "GLTFLoader";
 import { WObject } from "./WObject.js";
-import {AppState} from "./AppState.js";
+import { AppState } from "./AppState.js";
 
 const boundingBoxMaterial = new THREE.MeshBasicMaterial({
     opacity: 0.15,
@@ -10,49 +11,77 @@ const boundingBoxMaterial = new THREE.MeshBasicMaterial({
 });
 
 class Furniture extends WObject {
-    constructor(catalogItem, ANISOTROPY_MAX) {
+    constructor(catalogItem, ANISOTROPY_MAX, otherObject = null) {
         super();
 
         this.userData = {
             catalogItem: catalogItem,
-            originalDimensions: {"X": -1, "Z": -1, "Y": -1},
-            dimensions: {"X": -1, "Z": -1, "Y": -1},
+            originalDimensions: { X: -1, Z: -1, Y: -1 },
+            dimensions: { X: -1, Z: -1, Y: -1 },
             model: null,
+            materialColorMap: null,
             boundingBox: null,
             boundingWireframe: null,
         };
 
-        this.loadModel(ANISOTROPY_MAX); /* <= dimensions; = boundings*/
+        if (otherObject) {
+            this.scale.copy(otherObject.scale); // jsut in case
+
+            this.userData.originalDimensions = { ...otherObject.userData.originalDimensions };
+            this.userData.dimensions = { ...otherObject.userData.dimensions };
+            this.userData.materialColorMap = { ...otherObject.userData.materialColorMap };
+        }
+
+        this.loadModel(ANISOTROPY_MAX);
     }
 
+
     loadModel(ANISOTROPY_MAX) {
-        const fbxPath = this.catalogItem.modelPath;
-        const loader = new FBXLoader();
+        const gltfPath = this.catalogItem.modelPath;
+        const loader = new GLTFLoader();
 
-        loader.load(fbxPath, (object) => {
-            this.userData.model = object;
+        loader.load(gltfPath, (gltf) => {
+            const model = gltf.scene;
 
-            object.position.y += 0.1; // place above the floor
+            model.position.y += 0.1; // place above the floor | TODO: transformcontrols stayed at 0 y coordinate...
 
-            object.traverse(child => {
+            if (!this.userData.materialColorMap) {
+                this.userData.materialColorMap = {};
+            }
+
+            const savedColors = this.userData.materialColorMap;
+
+            model.traverse(child => {
                 child.userData.root = this;
 
                 if (child.isMesh && child.material) {
                     const materials = Array.isArray(child.material) ? child.material : [child.material];
+
                     materials.forEach(material => {
-                        ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'bumpMap', 'emissiveMap'].forEach(mapType => { // TODO: atkell majd gondolnom a vegen, hogy kell e az osszes
-                            setTimeout(() => {
-                                if (material[mapType] && material[mapType].image) {
-                                    material[mapType].anisotropy = ANISOTROPY_MAX;
-                                    material[mapType].needsUpdate = true;
-                                }
-                            }, 1000); // heka to prevent material[mapType] === undefined and throwing warnings to the console
-                        });
+
+                        const savedHex = savedColors[child.name];
+                        if (savedHex && material.color) {
+                            material.color.set(savedHex);
+                        }
+                        else if (material.userData?.default_color) {
+                            material.color.set(material.userData.default_color);
+                            if (material.color) {
+                                savedColors[child.name] = `#${material.color.getHexString()}`;
+                            }
+                        }
+
+                        setTimeout(() => {
+                            if (material.map?.image) {
+                                material.map.anisotropy = ANISOTROPY_MAX;
+                                material.map.needsUpdate = true;
+                            }
+                        }, 1000);
                     });
                 }
             });
 
-            this.add(this.userData.model);
+            this.add(model);
+            this.userData.model = model; // at this state the model will be loaded (its async)
             this.addBoundings();
 
             this.traverse(obj => {
@@ -64,6 +93,21 @@ class Furniture extends WObject {
             this.convertResizeLimits();
         }, undefined, (error) => {
             console.error("unable to load the model", error);
+        });
+    }
+
+    onColorApply(otherFurnitureMaterialMap) {
+        this.userData.materialColorMap = { ...otherFurnitureMaterialMap };
+
+        this.userData.model.traverse(child => {
+            if (child.isMesh && child.material) {
+                const savedHex = otherFurnitureMaterialMap[child.name];
+                if (savedHex && child.material.color) {
+                    child.material.color.set(savedHex);
+                    child.material.needsUpdate = true;
+                    this.userData.materialColorMap[child.name] = `#${child.material.color.getHexString()}`;
+                }
+            }
         });
     }
 
@@ -188,12 +232,13 @@ class Furniture extends WObject {
         if (this.userData.boundingBox && this.userData.boundingBox.geometry) {
             this.userData.boundingBox.geometry.dispose();
         }
+
         if (this.userData.boundingWireframe) {
             this.remove(this.userData.boundingWireframe);
         }
-        if (this.parent) {
+
+        if (this.parent)
             this.parent.remove(this );
-        }
 
         this.userData.model = null;
         this.userData.boundingWireframe = null;

@@ -1,10 +1,11 @@
 import * as THREE from 'three';
-import {TransformControls} from "TransformControls";
-import {LineGeometry} from "LineGeometry";
-import {LineMaterial} from "LineMaterial";
-import {Line2} from "Line2";
-import { ObjectFilter } from "./AppState.js";
-import {Furniture} from "./Furniture.js";
+
+import { TransformControls } from "TransformControls";
+import { LineGeometry } from "LineGeometry";
+import { LineMaterial } from "LineMaterial";
+import { Line2 } from "Line2";
+import { AppState, ObjectFilter } from "./AppState.js";
+import { Furniture } from "./Furniture.js";
 import { PlanLabel } from "./planMode.js";
 
 
@@ -124,7 +125,12 @@ export class WTransformControl extends TransformControls {
                 document.getElementById('scale').classList.add('disabled');
             }
 
+            document.getElementById('paint-button').classList.remove('disabled');
+
             this.setSpace("world");
+
+            const copy = new Furniture(otherObject.userData.catalogItem, 16, otherObject);
+            AppState.addToPreviewScene(copy, otherObject);
         }
 
         super.attach(otherObject);
@@ -144,11 +150,15 @@ export class WTransformControl extends TransformControls {
             }
         }
 
+        document.getElementById('paint-button').classList.add('disabled');
+
+        AppState.removeFromPreviewScene();
+
         super.detach();
     }
 
-    changeTransformModes(TransformMode) {
-        switch (TransformMode){
+    changeTransformModes(transformMode) {
+        switch (transformMode){
             case 'translate':
                 this.setMode("translate");
                 this.#handleGizmoModes("translate");

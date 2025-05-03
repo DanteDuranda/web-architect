@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 
-import {Wall} from "./Wall.js";
-import {Furniture} from "./Furniture.js";
-import {Room} from "./Room.js";
+import { Wall } from "./Wall.js";
+import { Furniture } from "./Furniture.js";
+import { Room } from "./Room.js";
 import { PlanCursor, PlanLabel} from "./planMode.js";
-import {SideBar} from "./UiControl.js";
-import {WTransformControl} from "./WTransformControl.js";
-import {ThreeGeometry} from "./ThreeGeometry.js";
-import {OrbitControls} from 'OrbitControls';
-import {Telemetry} from "./Ui2d.js";
-import {CSS2DRenderer} from 'CSS2DRenderer';
+import { SideBar } from "./UiControl.js";
+import { WTransformControl } from "./WTransformControl.js";
+import { ThreeGeometry } from "./ThreeGeometry.js";
+import { OrbitControls } from 'OrbitControls';
+import { Telemetry } from "./Ui2d.js";
+import { CSS2DRenderer } from 'CSS2DRenderer';
 
 const NO_CULLING_LIMIT = 50;
 const MIN_ZOOM = 1;
@@ -18,8 +18,21 @@ let aspectRatio = window.innerWidth / window.innerHeight;
 
 const canvas = document.querySelector('canvas');
 
+const previewCanvas = document.getElementById("preview-canvas");
+const previewRenderer = new THREE.WebGLRenderer({
+    canvas: previewCanvas,
+    alpha: true,
+    antialias: true,
+});
+previewRenderer.setSize(600, 600);
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x4A4848);
+
+const previewScene = new THREE.Scene();
+previewScene.background = new THREE.Color(0xfffbe9);
+const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
+previewScene.add(hemisphereLight);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true  });
 const cSS2DRenderer = new CSS2DRenderer();
@@ -35,6 +48,11 @@ let cameraOrtho = new THREE.OrthographicCamera(
 );
 
 const cameraPersp = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000);
+
+const previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+previewCamera.position.set(2, 2, 2);
+previewCamera.lookAt(0, 1, 0);
+previewCamera.layers.enable(1);
 
 let gridHelperM, gridHelperDm, gridHelperCm;
 
@@ -132,6 +150,19 @@ function onWindowResize() { // TODO: mehetne AppState-be-be
     cSS2DRenderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+/*TODO start: REFAKTOR*/
+/*const paintButton = document.getElementById('paint-button');
+const painter = document.getElementById('painter');
+
+paintButton.addEventListener('click', () => {
+    painter.click();
+});
+
+painter.addEventListener('input', (event) => {
+    const selectedColor = event.target.value;
+});*/
+/*TODO end: REFAKTOR*/
+
 Telemetry.createTelemetryDisplay();
 
 export class AppState {
@@ -139,6 +170,8 @@ export class AppState {
 
     static isPlanModeActive = false;
     static wallPlacingEnabled = false;
+
+    static originalObject = null;
 
     static init() {
         this.wmouse = new WMouse();
@@ -148,6 +181,10 @@ export class AppState {
         document.getElementById("renderer").addEventListener("click", this.wmouse.onMouseLeftClick.bind(this.wmouse));
         document.getElementById("renderer").addEventListener("contextmenu", this.wmouse.onMouseRightClick.bind(this.wmouse));
         document.getElementById("renderer").addEventListener("mousemove", this.wmouse.onMouseMove.bind(this.wmouse));
+        previewCanvas.addEventListener('mousemove', this.wmouse.onPreviewMouseMove.bind(this.wmouse), false);
+        previewCanvas.addEventListener("click", (e) => {
+            AppState.wmouse.showColorPicker(e);
+        });
 
         document.getElementById("planModeBt").addEventListener("click", AppState.activatePlanMode);
         document.getElementById("designModeBt").addEventListener("click", AppState.activateDesignMode);
@@ -163,6 +200,10 @@ export class AppState {
             AppState.updateWallVisibility();
             renderer.render(scene, cameraPersp);
             cSS2DRenderer.render(scene, cameraPersp);
+        }
+
+        if(AppState.isObjectSelected()) {
+            previewRenderer.render(previewScene, previewCamera);
         }
     }
 
@@ -244,8 +285,23 @@ export class AppState {
                 firstHit.parent.toggleVisibility(false);
         }
     }
-}
 
+    static addToPreviewScene(copy, original) {
+        previewScene.add(copy);
+        AppState.previewSceneObject = copy;
+        AppState.originalObject = original;
+    }
+
+    static removeFromPreviewScene() {
+        AppState.sideBar.togglePreviewPanel(false)
+        AppState.previewSceneObject.onDelete();
+        AppState.originalObject = null;
+    }
+
+    static isObjectSelected() {
+        return AppState.previewSceneObject != null;
+    }
+}
 
 export class WMouse {
     static instance = null;
@@ -257,9 +313,11 @@ export class WMouse {
 
         this.cursorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
         this.planCursor = new PlanCursor();
+
         this.mouseDownPosition = { x: 0, y: 0 };
         this.movementThreshold = 5; // pixels
         this.isClickSuppressed = false;
+
         this.isPlacingWall = false;
         this.wallStartPoint = null;
         this.startPoint = new THREE.Vector3();
@@ -267,10 +325,16 @@ export class WMouse {
         this.distanceLabel = null;
         this.newCornerPoints = [];
         this.newWalls = [];
+
         this.wTransformControls = null;
-        this.crosshair = document.createElement("crosshair");
+
         this.orbControlOrtho = null;
         this.orbControlPersp = null;
+
+        this.hoveredObject = null;
+        this.previewControls = null;
+
+        this.crosshair = document.createElement("crosshair");
 
         canvas.addEventListener('mousedown', (event) => {
             this.mouseDownPosition = { x: event.clientX, y: event.clientY };
@@ -291,23 +355,19 @@ export class WMouse {
         WMouse.instance = this;
     }
 
-    static getWMouse() {
-        if (!WMouse.instance) {
-            WMouse.instance = new WMouse();
-        }
-        return WMouse.instance;
-    }
-
     init() {
         this.orbControlOrtho = new OrbitControls(cameraOrtho, renderer.domElement);
         this.orbControlOrtho.enableRotate = false;
+        this.orbControlOrtho.addEventListener("change", this.manageZoomInPlanMode.bind(this));
 
         this.orbControlPersp = new OrbitControls(cameraPersp, renderer.domElement);
 
+        this.previewControls = new OrbitControls(previewCamera, previewCanvas);
+        this.previewControls.dampingFactor = 0.3;
+        this.previewControls.enableDamping = true;
+        this.previewControls.maxPolarAngle = Math.PI / 3;
+
         this.wTransformControls = new WTransformControl(cameraOrtho, renderer.domElement);
-
-        this.orbControlOrtho.addEventListener("change", this.manageZoomInPlanMode.bind(this));
-
 
         this.wTransformControls.addEventListener('dragging-changed', (event) => {
             this.orbControlPersp.enabled = !event.value;
@@ -546,6 +606,66 @@ export class WMouse {
         } else {
             scene.remove(gridHelperCm);
         }
+    }
+
+    onPreviewMouseMove(event) {
+        const rect = previewCanvas.getBoundingClientRect();
+        const mousePos = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+
+        raycaster.layers.set(1);
+
+        mousePos.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mousePos.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mousePos, previewCamera);
+        const intersects = raycaster.intersectObjects(previewScene.children, true);
+
+        AppState.previewSceneObject.traverse(child => {
+            if (child.isMesh && child.material?.emissive) {
+                child.material.emissive.set(0x000000);
+            }
+        });
+
+        if (intersects.length > 0) {
+            const first = intersects[0].object;
+            if (first.material?.emissive) {
+                first.material.emissive.set(0x444444);
+            }
+            this.hoveredObject = first;
+        } else {
+            this.hoveredObject = null;
+        }
+    }
+
+    showColorPicker(e) {
+        if (!this.hoveredObject || !this.hoveredObject.material) return;
+
+        const targetObject = this.hoveredObject;
+        const colorPicker = document.getElementById("furniture-painter");
+        if (!colorPicker) return;
+
+        if (targetObject.material.color) {
+            colorPicker.value = `#${targetObject.material.color.getHexString()}`;
+        }
+
+        colorPicker.oninput = () => {
+            const hex = colorPicker.value;
+            if (targetObject.material?.color) {
+                targetObject.material.color.set(hex);
+                targetObject.material.needsUpdate = true;
+
+                // Update materialColorMap on the root furniture object
+                const root = targetObject.userData?.root;
+                if (root) {
+                    if (!root.userData.materialColorMap) {
+                        root.userData.materialColorMap = {};
+                    }
+
+                    root.userData.materialColorMap[targetObject.name] = hex;
+                }
+            }
+        };
     }
 }
 

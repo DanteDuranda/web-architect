@@ -1,13 +1,14 @@
 import {AppState, ObjectFilter} from "./AppState.js";
 
 export class SideBar {
-    static catalogItems = [];
+    static catalogItems = []; // TODO ezt elfelejtettem bekotni, most ujratolti a katalogust minden alkalommal
     static catalogItemsDOMElement = new Map();
 
     #widthInput;
     #heightInput;
     #planModeContent;
     #designModeContent;
+
     constructor(transformControls) {
         this.transformControls = transformControls;
 
@@ -19,7 +20,7 @@ export class SideBar {
         this.#widthInput = null;
         this.#heightInput = null;
 
-        this.chairFilterBt = null;
+        this.chairFilterBt = null; // TODO: ne reseteljen a filter mod valtasnal
         this.tableFilterBt = null;
 
         this.officeCategoryBt = null;
@@ -32,16 +33,42 @@ export class SideBar {
 
         document.getElementById("showSidebarBt").addEventListener("click", this.toggleSideBar);
 
+        this.paintButton = document.getElementById('paint-button');
+        this.paintButton.classList.add('disabled');
+        this.paintButton.addEventListener('click', event => {
+            this.togglePreviewPanel();
+        })
+
+        this.previewPanel = document.getElementById("preview-panel");
+        this.togglePreviewPanel(false);
+
+        this.applyColorButton = document.getElementById('apply-color-button');
+        this.applyColorButton.addEventListener('click', event => {
+            AppState.originalObject.onColorApply(AppState.previewSceneObject.userData.materialColorMap);
+        })
+
         this.furnitureCatalog = new FurnitureCatalog();
 
         this.handleTransformButtons(transformControls);
 
-        // preload content files for plan and design modes
-        this.#preloadSidebarContent().then(() => {
+        this.#preloadSidebarContent().then(() => { // preload content files for plan and design modes
             this.updateSidebar(true);
         });
     }
 
+    togglePreviewPanel(visibility = null) {
+        let currentVisStat;
+
+        if (visibility === null) {
+            currentVisStat = this.previewPanel.style.display !== "none";
+            visibility = !currentVisStat;
+        }
+
+        if (visibility)
+            this.previewPanel.style.display = "block"
+        else
+            this.previewPanel.style.display = "none"
+    }
 
     toggleSideBar() {
         const sideBar = document.querySelector(".side-bar");
@@ -81,8 +108,7 @@ export class SideBar {
 
     updateSidebar(isPlanModeActive) {
         if (isPlanModeActive) {
-            // load cached plan mode content
-            if (this.#planModeContent) {
+            if (this.#planModeContent) { // load cached plan mode content
                 this.sideBar.innerHTML = this.#planModeContent;
 
                 this.#updateWallInputFields();
@@ -106,8 +132,7 @@ export class SideBar {
                 this.handleAddWinDoorFromCatalog(this.transformControls);
             }
         } else {
-            // load cached design mode content
-            if (this.#designModeContent) {
+            if (this.#designModeContent) { // load cached design mode content
                 this.sideBar.innerHTML = this.#designModeContent;
                 this.furnitureCatalog.loadCatalogItems();
 
@@ -146,21 +171,21 @@ export class SideBar {
     handleTransformButtons(wTransformControls) {
         const transformGroup = document.querySelector('.transform-modes');
 
-        transformGroup?.addEventListener('click', (e) => {
-            const button = e.target.closest('.transform-button');
+        transformGroup?.addEventListener('click', (event) => {
+            const button = event.target.closest('.transform-button');
             if (!button || !transformGroup.contains(button)) return;
 
-            transformGroup.querySelectorAll('.transform-button').forEach(btn => {
-                btn.classList.remove('active');
+            transformGroup.querySelectorAll('.transform-button').forEach(button => {
+                button.classList.remove('active');
             });
 
             button.classList.add('active');
-            const mode = button.dataset.mode;
-            wTransformControls.changeTransformModes(mode);
+            const transformMode = button.dataset.mode;
+            wTransformControls.changeTransformModes(transformMode);
         });
 
         const deleteButton = document.getElementById('delete-button');
-        deleteButton.addEventListener('click', (e) => {
+        deleteButton.addEventListener('click', (event) => {
             wTransformControls.deleteObject();
         })
     }
@@ -229,7 +254,7 @@ export class CatalogItem {
 
         this.category = id.split('-')[0];
         this.imageSrc = `res/image/${this.category}/${id}.png`;
-        this.modelPath = `res/models/${id}.fbx`;
+        this.modelPath = `res/models/${id}.glb`;
     }
 }
 

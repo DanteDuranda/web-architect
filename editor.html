@@ -21,19 +21,25 @@
 <div id="controlGroups" class="control-groups">
     <ul class="button-group transform-modes">
         <li>
-            <button id="repos" class="transform-button active" data-mode="translate"><img class="button-image-editor" src="res/ui/transform-repos.png" alt="translate"></button>
+            <button id="repos" class="transform-button active" data-mode="translate"><img class="button-image-editor" src="res/ui/transform-repos.png" title="Position" alt="translate"></button>
         </li>
         <li>
-            <button id="scale" class="transform-button" data-mode="scale"><img class="button-image-editor" src="res/ui/transform-scale.png" alt="scale"></button>
+            <button id="scale" class="transform-button" data-mode="scale"><img class="button-image-editor" src="res/ui/transform-scale.png" title="Scale" alt="scale"></button>
         </li>
         <li>
-            <button id="rotate" class="transform-button" data-mode="rotate"><img class="button-image-editor" src="res/ui/transform-rotate.png" alt="rotate"></button>
+            <button id="rotate" class="transform-button" data-mode="rotate"><img class="button-image-editor" src="res/ui/transform-rotate.png" title="Rotate" alt="rotate"></button>
+        </li>
+    </ul>
+
+    <ul class="button-group">
+        <li style="position: relative;">
+            <button id="paint-button" class="transform-button"><img class="button-image-editor" src="res/ui/paint-bt.png" title="Paint" alt="paint"></button>
         </li>
     </ul>
 
     <ul class="button-group">
         <li>
-            <button id="delete-button" class="transform-button delete-button"><img class="button-image-editor" src="res/ui/trashcan.png" alt="delete"></button>
+            <button id="delete-button" class="transform-button delete-button"><img class="button-image-editor" src="res/ui/trashcan.png" title="Delete" alt="delete"></button>
         </li>
     </ul>
 </div>
@@ -41,6 +47,16 @@
 <div class="side-bar"></div>
 
 <canvas id="renderer"></canvas>
+
+<div class="preview-wrapper">
+    <div id="preview-panel" class="preview-panel">
+        <canvas id="preview-canvas"></canvas>
+        <input type="color" id="furniture-painter"/>
+        <button id="apply-color-button">OK</button>
+    </div>
+</div>
+
+
 <script type="importmap">
     {
         "imports": {
@@ -49,6 +65,7 @@
             "Wall": "./src/Wall.js",
             "ThreeGeometry": "./src/ThreeGeometry.js",
             "FBXLoader": "./three/examples/jsm/loaders/FBXLoader.js",
+            "GLTFLoader": "./three/examples/jsm/loaders/GLTFLoader.js",
             "ObjectLoader": "./three/examples/jsm/loaders/OBJLoader.js",
             "MTLLoader ": "./three/examples/jsm/loaders/MTLLoader.js",
             "Furniture": "./src/Furniture.js",

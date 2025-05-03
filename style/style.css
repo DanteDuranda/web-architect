@@ -196,3 +196,67 @@ canvas {
     z-index: 99;
     white-space: pre;
 }
+
+
+/*#painter {
+    position: absolute;
+    left: 115%;
+    top: -60%;
+    opacity: 0;
+    pointer-events: none; /* just in case */
+    /*z-index: 1;
+    flex-direction: column;
+}*/
+
+.preview-wrapper {
+    position: fixed;
+    top: 63px;
+    right: 5px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.preview-panel {
+    width: 600px;
+    background: #fffbe9;
+    border: 4px solid #fffbe9;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+#preview-canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+#furniture-painter {
+    position: absolute;
+    top: 535px;
+    height: 50px;
+    width: 50px;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 100;
+}
+
+#apply-color-button {
+    position: absolute;
+    top: 535px;
+    left: 80px;
+    height: 50px;
+    width: 50px;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 100;
+}
+
+#apply-color-button:hover {
+    background: #FFA500;
+}

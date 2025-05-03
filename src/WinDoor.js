@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { ThreeGeometry } from './ThreeGeometry.js';
 import { CatalogItem } from './UiControl.js';
 
@@ -16,7 +17,6 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
     reflectivity: 0.2,
     clearcoat: 1
 });
-
 
 class WinDoor extends THREE.Group {
     constructor(wall, type = "plane") {
