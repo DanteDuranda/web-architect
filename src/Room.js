@@ -69,7 +69,7 @@ export class Room extends WObject {
         }
     }
 
-    subtractFloorGeometry(floor) { // TODO: ez itt meg nem ugy megy ahogy kenexd
+    subtractFloorGeometry(floor) {
         const currentFloor = this.floor;
         const newFloor = floor;
 
@@ -86,7 +86,7 @@ export class Room extends WObject {
             !currentFloor.geometry.attributes?.position ||
             !newFloor.geometry.attributes?.position
         ) {
-            console.warn("Invalid floor geometry for CSG subtraction.");
+            console.warn("invalid floor geometry for CSG");
             return;
         }
 

@@ -171,6 +171,8 @@ export class AppState {
     static isPlanModeActive = false;
     static wallPlacingEnabled = false;
 
+    static isRecoloring = false;
+
     static originalObject = null;
 
     static init() {
@@ -202,7 +204,7 @@ export class AppState {
             cSS2DRenderer.render(scene, cameraPersp);
         }
 
-        if(AppState.isObjectSelected()) {
+        if(AppState.isObjectSelected() && AppState.isRecoloring) {
             previewRenderer.render(previewScene, previewCamera);
         }
     }
@@ -551,7 +553,7 @@ export class WMouse {
         if (this.newCornerPoints.length < 2) return; // need at least 2 points to form a line
 
         if (!this.newCornerPoints.at(0).equals(this.newCornerPoints.at(this.newCornerPoints.length-1))) {
-            alert("Start and end points does not matches.");
+            alert("Start and end points does not matches!");
         }
 
         const floorMesh = ThreeGeometry.createExtrudedFloor(this.newCornerPoints);
@@ -562,6 +564,7 @@ export class WMouse {
 
         scene.add(floorMesh);
         this.newCornerPoints = [];
+
         ObjectFilter.addByInstance(this.newWalls);
 
         ObjectFilter.addByInstance(new Room(this.newWalls, floorMesh));

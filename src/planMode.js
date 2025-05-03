@@ -41,7 +41,7 @@ export class PlanCursor {
     }
 
     createCursor() {
-        const segments = 20; // Number of segments for the circle
+        const segments = 20; // number of segments for the circle
 
         // center circle
         const circleGeometry = new THREE.CircleGeometry(this.radius, segments);
@@ -55,12 +55,12 @@ export class PlanCursor {
 
         // horizontal line
         const horizontalGeometry = new THREE.BoxGeometry(crossLength, this.crossThickness, this.crossThickness);
-        const horizontalMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+        const horizontalMaterial = new THREE.MeshBasicMaterial({ color: 0xFFA500 });
         const horizontalLine = new THREE.Mesh(horizontalGeometry, horizontalMaterial);
 
         // vertical line
         const verticalGeometry = new THREE.BoxGeometry(this.crossThickness, crossLength, this.crossThickness);
-        const verticalMaterial = new THREE.MeshBasicMaterial({ color: 0x0000FF });
+        const verticalMaterial = new THREE.MeshBasicMaterial({ color: 0xFFA500 });
         const verticalLine = new THREE.Mesh(verticalGeometry, verticalMaterial);
         verticalLine.rotation.x = -Math.PI / 2;
 
@@ -93,7 +93,6 @@ export class PlanCursor {
     }
 
     drawDebugMarker(x, y, z, scene) {
-        // Create a sphere geometry for the marker
         const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16); // Small sphere
         const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color
 
@@ -143,127 +142,3 @@ export class PlanCursor {
         return cylinder;
     }
 }
-
-export class FloorGenerator {
-
-    constructor(isDebugEnabled=false) {
-        this.isDebugEnabled = isDebugEnabled;
-    }
-
-
-
-    /*generateFloor(points) { // TODO: DEPRECATED
-        if (typeof points !== 'object' || points.length < 3) return;
-
-        if (this.#isCounterClockwise(points)) {
-            points.reverse();
-        }
-
-        const floorGeometry = new THREE.BufferGeometry();
-        let color = this.isDebugEnabled ? Math.floor(Math.random() * 0xFFFFFF) : '0xf1f792';
-        const floorMaterial = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, wireframe: false });
-        const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
-
-        const triangleIndices = this.#earClippingTriangulation(points); // triangle index
-        const vertices = new Float32Array(points.length * 3); // need to convert bc THREE.js bufferGeometry
-
-        for (let i = 0; i < points.length; i++) {
-            vertices[i * 3] = points[i].x;     // 0 * 3 = 0     ; 3 ...
-            vertices[i * 3 + 1] = points[i].y; // 0 * 3 + 1 = 1 ; 4 ...
-            vertices[i * 3 + 2] = points[i].z; // 0 * 3 + 2 = 2 ; 5 ...
-        }
-
-        floorGeometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-        floorGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(triangleIndices), 1));
-
-        /*let nx = normalattr.array[vp]; exception thrown here while csg operation
-        * its happened bc the geometry had no normal vectors, which is crucial for csg and lightning operations*/
-        /*floorGeometry.computeVertexNormals();
-
-        floorMesh.position.y += 0.001;
-
-        return floorMesh;
-    }*/
-
-    /*#earClippingTriangulation(points) {
-        let indices = [];
-        let remainingPoints = points.map((p, i) => i); // store indices instead of removing objects
-
-        while (remainingPoints.length > 3) {
-            let earFound = false;
-            for (let i = 0; i < remainingPoints.length; i++) {
-                if (this.#isEar(i, remainingPoints, points)) {
-                    const prev = remainingPoints[(i - 1 + remainingPoints.length) % remainingPoints.length];
-                    const curr = remainingPoints[i];
-                    const next = remainingPoints[(i + 1) % remainingPoints.length];
-
-                    indices.push(prev, curr, next);
-                    remainingPoints.splice(i, 1); // remove ear
-                    earFound = true;
-                    break;
-                }
-            }
-
-            if (!earFound) {
-                console.warn("ear not found - {earClippingTriangulation(points)}");
-                return [];
-            }
-        }
-
-        indices.push(remainingPoints[0], remainingPoints[1], remainingPoints[2]); // last remaining triangle
-
-        return indices;
-    }
-
-
-    #isEar(i, remainingPoints, points) {
-        const prev = points[remainingPoints[(i - 1 + remainingPoints.length) % remainingPoints.length]];
-        const curr = points[remainingPoints[i]];
-        const next = points[remainingPoints[(i + 1) % remainingPoints.length]];
-
-        if (!this.#isConvex(prev, curr, next)) return false;
-
-        for (let j = 0; j < remainingPoints.length; j++) {
-            if (j !== i && j !== (i - 1 + remainingPoints.length) % remainingPoints.length && j !== (i + 1) % remainingPoints.length) {
-                const testPoint = points[remainingPoints[j]];
-                if (this.#pointInTriangle(testPoint, prev, curr, next)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    #pointInTriangle(testPoint, prev, curr, next) { // TODO: nagyon fontos lenne, hogy ez normálisan működjön...
-        const d1 = this.#sign(testPoint, prev, curr);
-        const d2 = this.#sign(testPoint, curr, next);
-        const d3 = this.#sign(testPoint, next, prev);
-        return (d1 >= 0 && d2 >= 0 && d3 >= 0) || (d1 <= 0 && d2 <= 0 && d3 <= 0);
-    }
-
-    #sign(point1, point2, point3) {
-        return (point1.x - point3.x) * (point2.z - point3.z) - (point2.x - point3.x) * (point1.z - point3.z);
-    }
-
-    #isConvex(prev, curr, next) {
-        return (curr.x - prev.x) * (next.z - prev.z) - (curr.z - prev.z) * (next.x - prev.x) >= 0;
-    }
-
-    #isCounterClockwise(points) { // Shoelace Formula || Gauss's Area Calculation
-        let area = 0;
-        for (let i = 0; i < points.length; i++) {
-            const j = (i + 1) % points.length; // j = i+=1
-            area += (points[j].x - points[i].x) * (points[j].z + points[i].z); // adds the vector's length
-        }
-        return area > 0;  // clockwise if positive and counterclockwise if negative, the name of the function is inverted bc of the screen coordinates are also inverted
-    }
-
-    drawLine(start, end) {
-        let material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line
-        let geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-        let line = new THREE.Line(geometry, material);
-        line.thickness = 2;
-        line.position.y += 5;
-        scene.add(line);
-    }*/
-} // TODO: DEPRECATED

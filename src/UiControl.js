@@ -45,6 +45,7 @@ export class SideBar {
         this.applyColorButton = document.getElementById('apply-color-button');
         this.applyColorButton.addEventListener('click', event => {
             AppState.originalObject.onColorApply(AppState.previewSceneObject.userData.materialColorMap);
+            this.togglePreviewPanel();
         })
 
         this.furnitureCatalog = new FurnitureCatalog();
@@ -64,10 +65,12 @@ export class SideBar {
             visibility = !currentVisStat;
         }
 
+        AppState.isRecoloring = visibility;
+
         if (visibility)
-            this.previewPanel.style.display = "block"
+            this.previewPanel.style.display = "block";
         else
-            this.previewPanel.style.display = "none"
+            this.previewPanel.style.display = "none";
     }
 
     toggleSideBar() {
