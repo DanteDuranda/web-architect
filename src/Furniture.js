@@ -245,6 +245,15 @@ class Furniture extends WObject {
         this.userData.boundingBox = null;
     }
 
+    materialOnDelete(modelChild) {
+        const materials = Array.isArray(modelChild.material) ? modelChild.material : [modelChild.material];
+
+        for (const material of materials)
+            material.dispose?.();
+        
+        modelChild.material = null;
+    }
+
     get model() {
         return this.userData.model;
     }
