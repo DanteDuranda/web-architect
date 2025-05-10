@@ -143,6 +143,13 @@ class Wall extends WObject {
         currentWall.geometry.needsUpdate = true;
     }
 
+    onWallGeometryUpdate() {
+        this.updateMatrixWorld(true);
+        this.updateWallLayers();
+        this.setupWallMaterials(null,this.wallHeight);
+        this.restoreLayerColors();
+    }
+
     toggleHighlight(highLightState) {
         this.isHighlighted = highLightState;
         HIGHLIGHT_MATERIAL.wireframe = AppState.debugEnabled;
