@@ -141,6 +141,8 @@ class Wall extends WObject {
         currentWall.geometry.dispose();
         currentWall.geometry = resultMesh.geometry;
         currentWall.geometry.needsUpdate = true;
+
+        this.onWallGeometryUpdate();
     }
 
     onWallGeometryUpdate() {
