@@ -119,6 +119,8 @@ class Wall extends WObject {
             wall.geometry = resultMesh.geometry;
             wall.geometry.needsUpdate = true;
         });
+
+        this.onWallGeometryUpdate();
     }
 
     subtractWallGeometry(wall) {
