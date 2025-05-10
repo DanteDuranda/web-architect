@@ -546,7 +546,7 @@ export class WMouse {
 
         ObjectFilter.placedWalls.forEach(placedWall => {
             this.newWalls.forEach(newWall => {
-                placedWall.subtractWallGeometry(newWall);
+                newWall.subtractWallGeometry(placedWall);
             })
         })
 
