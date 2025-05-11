@@ -1,13 +1,103 @@
 <Catalog>
     <CatalogItem id="chair-00000" type="chair">
-        <Name>Komolyabb szék</Name>
+        <Name>Wooden chair</Name>
+        <RoomType>kitchen</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable>false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="chair-00001" type="chair">
+        <Name>Office chair</Name>
         <RoomType>office</RoomType>
         <GizmoType>horizontal</GizmoType>
         <Resizable>false</Resizable>
     </CatalogItem>
     <CatalogItem id="table-00000" type="table">
-        <Name>Legkomolyabb asztal</Name>
+        <Name>Office desk</Name>
         <RoomType>office</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="1" maxX="2" minY="1" maxY="2" minZ="1" maxZ="2">true</Resizable>
+    </CatalogItem>
+    <CatalogItem id="couch-00000" type="chair">
+        <Name>Couch</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="couch-00001" type="chair">
+        <Name>Leather couch</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable>false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="pillow-00000" type="other">
+        <Name>Pillow</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable minX="-1" maxX="-1" minY="-1" maxY="-1" minZ="-1" maxZ="-1">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="fridge-00000" type="other">
+        <Name>Fridge</Name>
+        <RoomType>kitchen</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="lamp-00000" type="other">
+        <Name>Floor lamp</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="lamp-00001" type="other">
+        <Name>Desk lamp</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="plant-00001" type="other">
+        <Name>Cactus</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="plant-00000" type="other">
+        <Name>Flowers in pot</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="screen-00000" type="other">
+        <Name>Flat screen monitor</Name>
+        <RoomType>office</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="cabinet-00000" type="other">
+        <Name>Cabinet</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="cabinet-00001" type="table">
+        <Name>Tv cabinet</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="kitchen-cabinet-00000" type="table">
+        <Name>Cabinet with sink</Name>
+        <RoomType>kitchen</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="kitchen-cabinet-00001" type="table">
+        <Name>Cabinet with drawers</Name>
+        <RoomType>kitchen</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="kitchen-cabinet-00002" type="table">
+        <Name>Cabinet</Name>
+        <RoomType>kitchen</RoomType>
         <GizmoType>horizontal</GizmoType>
         <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="0.8">false</Resizable>
     </CatalogItem>

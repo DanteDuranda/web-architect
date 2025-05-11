@@ -10,8 +10,10 @@ import { ThreeGeometry } from "./ThreeGeometry.js";
 import { OrbitControls } from 'OrbitControls';
 import { Telemetry } from "./Ui2d.js";
 import { CSS2DRenderer } from 'CSS2DRenderer';
+import {WinDoor} from "./WinDoor.js";
+import CSG from "../THREE-CSGMesh-master/three-csg.js";
 
-const NO_CULLING_LIMIT = 50;
+
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 100;
 let aspectRatio = window.innerWidth / window.innerHeight;
@@ -19,6 +21,7 @@ let aspectRatio = window.innerWidth / window.innerHeight;
 const canvas = document.querySelector('canvas');
 
 const previewCanvas = document.getElementById("preview-canvas");
+
 const previewRenderer = new THREE.WebGLRenderer({
     canvas: previewCanvas,
     alpha: true,
@@ -31,40 +34,36 @@ scene.background = new THREE.Color(0x4A4848);
 
 const previewScene = new THREE.Scene();
 previewScene.background = new THREE.Color(0xfffbe9);
-const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
-previewScene.add(hemisphereLight);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true  });
-const cSS2DRenderer = new CSS2DRenderer();
+
+const cSS2DRenderer = new CSS2DRenderer({ element: document.getElementById('css2d-ui') });
+
 const ANISOTROPY_MAX = renderer.capabilities.getMaxAnisotropy();
 
-let cameraOrtho = new THREE.OrthographicCamera(
-    NO_CULLING_LIMIT * aspectRatio / -2,     // left
-    NO_CULLING_LIMIT * aspectRatio / 2,     //  right
-    NO_CULLING_LIMIT / 2,                  //   top
-    NO_CULLING_LIMIT / -2,                //    bottom
-    1,                                   //     near
-    1000                                //      far
+const NO_CULLING_LIMIT = 50;
+const cameraOrtho = new THREE.OrthographicCamera( // THREE.OrthographicCamera(left, right, top, bottom, near, far);
+    NO_CULLING_LIMIT * aspectRatio / -2,
+    NO_CULLING_LIMIT * aspectRatio / 2,
+    NO_CULLING_LIMIT / 2,
+    NO_CULLING_LIMIT / -2,
+    1,
+    1000
 );
 
 const cameraPersp = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000);
 
-const previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+const previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000); // the preview canvas is rectangle shaped (ar = 1)
 previewCamera.position.set(2, 2, 2);
 previewCamera.lookAt(0, 1, 0);
 previewCamera.layers.enable(1);
 
 let gridHelperM, gridHelperDm, gridHelperCm;
 
-function Init() {
+function InitResources() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio * 1.25);
-
     cSS2DRenderer.setSize(window.innerWidth, window.innerHeight);
-    cSS2DRenderer.domElement.style.position = 'absolute';
-    cSS2DRenderer.domElement.style.top = '0';
-    cSS2DRenderer.domElement.style.pointerEvents = 'none';
-    document.body.appendChild(cSS2DRenderer.domElement);
 
     gridHelperM = new THREE.GridHelper(50, 50, 0x232526, 0xFFFFFF);
     scene.add(gridHelperM);
@@ -75,8 +74,11 @@ function Init() {
 
     gridHelperCm = new THREE.GridHelper(50, 5000, 0x232526, 0x556677);
 
-    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
-    scene.add(hemisphereLight);
+    let hemisphereLMain = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
+    scene.add(hemisphereLMain);
+
+    let hemisphereLPreview = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
+    previewScene.add(hemisphereLPreview);
 
     cameraOrtho.position.set(0, 30, 0);
     cameraOrtho.lookAt(0, 0, 0);
@@ -93,7 +95,10 @@ function Init() {
 
     cameraPersp.addEventListener('zoom', AppState.wmouse.wTransformControls.updateGizmoSize);
     cameraPersp.addEventListener('move', AppState.wmouse.wTransformControls.updateGizmoSize);
+
     scene.add(AppState.wmouse.wTransformControls);
+
+    Telemetry.createTelemetryDisplay();
 }
 
 window.addEventListener('resize', onWindowResize, false);
@@ -137,33 +142,21 @@ canvas.addEventListener("drop", (event) => {
     AppState.addFurnitureToScene(catalogItem, intersectedPosOnCursorPlane);
 });
 
-function onWindowResize() { // TODO: mehetne AppState-be-be
-    const aspect = window.innerWidth / window.innerHeight;
-    cameraOrtho.left = -50 * aspect / 2;
-    cameraOrtho.right = 50 * aspect / 2;
+function onWindowResize() {
+    aspectRatio = window.innerWidth / window.innerHeight;
+
+    cameraOrtho.left = -50 * aspectRatio / 2;
+    cameraOrtho.right = 50 * aspectRatio / 2;
     cameraOrtho.top = 50 / 2;
     cameraOrtho.bottom = -50 / 2;
     cameraOrtho.updateProjectionMatrix();
-    cameraPersp.aspect = aspect;
+
+    cameraPersp.aspect = aspectRatio;
     cameraPersp.updateProjectionMatrix();
+
     renderer.setSize(window.innerWidth, window.innerHeight);
     cSS2DRenderer.setSize(window.innerWidth, window.innerHeight);
 }
-
-/*TODO start: REFAKTOR*/
-/*const paintButton = document.getElementById('paint-button');
-const painter = document.getElementById('painter');
-
-paintButton.addEventListener('click', () => {
-    painter.click();
-});
-
-painter.addEventListener('input', (event) => {
-    const selectedColor = event.target.value;
-});*/
-/*TODO end: REFAKTOR*/
-
-Telemetry.createTelemetryDisplay();
 
 export class AppState {
     static debugEnabled = false;
@@ -173,19 +166,26 @@ export class AppState {
 
     static isRecoloring = false;
 
+    static isXrayEnabled = false;
+
+    static wallPaintState = false;
+
     static originalObject = null;
 
     static init() {
         this.wmouse = new WMouse();
 
         this.sideBar = new SideBar(this.wmouse.wTransformControls);
-        Init();
-        document.getElementById("renderer").addEventListener("click", this.wmouse.onMouseLeftClick.bind(this.wmouse));
-        document.getElementById("renderer").addEventListener("contextmenu", this.wmouse.onMouseRightClick.bind(this.wmouse));
-        document.getElementById("renderer").addEventListener("mousemove", this.wmouse.onMouseMove.bind(this.wmouse));
-        previewCanvas.addEventListener('mousemove', this.wmouse.onPreviewMouseMove.bind(this.wmouse), false);
-        previewCanvas.addEventListener("click", (e) => {
-            AppState.wmouse.showColorPicker(e);
+
+        InitResources();
+
+        canvas.addEventListener("click", this.wmouse.onMouseLeftClick.bind(this.wmouse));
+        canvas.addEventListener("contextmenu", this.wmouse.onMouseRightClick.bind(this.wmouse));
+        canvas.addEventListener("mousemove", this.wmouse.onMouseMove.bind(this.wmouse));
+
+        previewCanvas.addEventListener('mousemove', this.wmouse.onPreviewMouseMove.bind(this.wmouse));
+        previewCanvas.addEventListener("click", () => {
+            AppState.wmouse.showColorPicker();
         });
 
         document.getElementById("planModeBt").addEventListener("click", AppState.activatePlanMode);
@@ -199,13 +199,27 @@ export class AppState {
             renderer.render(scene, cameraOrtho);
             cSS2DRenderer.render(scene, cameraOrtho);
         } else {
-            AppState.updateWallVisibility();
+            if(AppState.isXrayEnabled)
+                AppState.updateWallVisibility();
+
             renderer.render(scene, cameraPersp);
             cSS2DRenderer.render(scene, cameraPersp);
         }
 
-        if(AppState.isObjectSelected() && AppState.isRecoloring) {
+        if(AppState.isObjectSelected() && AppState.isRecoloring)
             previewRenderer.render(previewScene, previewCamera);
+
+        if (AppState.wmouse.wTransformControls.object && AppState.wmouse.wTransformControls.object.name !== "wallGeometry")
+        {
+            AppState.wmouse.wTransformControls.updateGizmoSize();
+            AppState.wmouse.wTransformControls.updateRayLines(ObjectFilter.addedFurnitures, ObjectFilter.placedWalls);
+        }
+
+        if (AppState.wmouse.wTransformControls.object &&
+            AppState.wmouse.wTransformControls.object instanceof WinDoor &&
+            AppState.wmouse.wTransformControls.isDragging)
+        {
+            AppState.wmouse.wTransformControls.object.wall.updateWindoorOnWall();
         }
     }
 
@@ -231,13 +245,13 @@ export class AppState {
             wall.setLengthLabelVisible(true);
         });
 
-        AppState.wmouse.crosshair.style.opacity = 0;
-
         AppState.wmouse.wTransformControls.switchCamera(cameraOrtho);
+
+        AppState.toggle3dCursor(false);
 
         AppState.isPlanModeActive = true;
 
-        AppState.sideBar.updateSidebar(AppState.isPlanModeActive);
+        AppState.sideBar.updateSidebar();
     }
 
 
@@ -247,7 +261,6 @@ export class AppState {
 
         AppState.wallPlacingEnabled = false;
 
-        AppState.wmouse.crosshair.style.opacity = 0.2;
         scene.remove(AppState.wmouse.planCursor.cursorGroup);
         canvas.style.cursor = 'default';
 
@@ -262,9 +275,11 @@ export class AppState {
             wall.setLengthLabelVisible(false);
         })
 
+        AppState.toggle3dCursor(true);
+
         AppState.isPlanModeActive = false;
 
-        AppState.sideBar.updateSidebar(AppState.isPlanModeActive);
+        AppState.sideBar.updateSidebar();
     }
 
     static updateWallVisibility() {
@@ -276,9 +291,7 @@ export class AppState {
 
         let intersects = raycaster.intersectObjects(ObjectFilter.placedWalls, true);
 
-        ObjectFilter.placedWalls.forEach((wall) => {
-            wall.toggleVisibility(true);
-        });
+        AppState.resetWallsVisibility();
 
         if (intersects.length > 0) {
             let firstHit = intersects[0].object;
@@ -286,6 +299,16 @@ export class AppState {
             if (!firstHit.parent.isAttached)
                 firstHit.parent.toggleVisibility(false);
         }
+    }
+
+    static resetWallsVisibility() {
+        ObjectFilter.placedWalls.forEach((wall) => {
+            wall.toggleVisibility(true);
+        });
+    }
+
+    static toggle3dCursor(activeState) {
+        activeState ? AppState.wmouse.crosshair.classList.add("crosshair-active") : AppState.wmouse.crosshair.classList.remove("crosshair-active");
     }
 
     static addToPreviewScene(copy, original) {
@@ -307,6 +330,12 @@ export class AppState {
 
 export class WMouse {
     static instance = null;
+
+    gridHelperGridSizes = {
+        cm: 0.01,
+        dm: 0.1,
+        m: 1
+    };
 
     constructor() {
         if (WMouse.instance) {
@@ -336,8 +365,14 @@ export class WMouse {
         this.hoveredObject = null;
         this.previewControls = null;
 
-        this.crosshair = document.createElement("crosshair");
+        this.crosshair = document.getElementById("3d_crosshair");
 
+        this.init();
+
+        WMouse.instance = this;
+    }
+
+    init() {
         canvas.addEventListener('mousedown', (event) => {
             this.mouseDownPosition = { x: event.clientX, y: event.clientY };
             this.isClickSuppressed = false;
@@ -347,17 +382,10 @@ export class WMouse {
             const dx = Math.abs(event.clientX - this.mouseDownPosition.x);
             const dy = Math.abs(event.clientY - this.mouseDownPosition.y);
 
-            if (dx > this.movementThreshold || dy > this.movementThreshold) {
+            if (dx > this.movementThreshold || dy > this.movementThreshold )
                 this.isClickSuppressed = true;
-            }
         });
 
-        this.init();
-
-        WMouse.instance = this;
-    }
-
-    init() {
         this.orbControlOrtho = new OrbitControls(cameraOrtho, renderer.domElement);
         this.orbControlOrtho.enableRotate = false;
         this.orbControlOrtho.addEventListener("change", this.manageZoomInPlanMode.bind(this));
@@ -375,21 +403,7 @@ export class WMouse {
             this.orbControlPersp.enabled = !event.value;
             this.wTransformControls.isDragging = event.value;
         });
-
-        this.createCrosshair();
     }
-
-    gridHelperMap = {
-        m: gridHelperM,
-        dm: gridHelperDm,
-        cm: gridHelperCm
-    };
-
-    gridHelperGridSizes = {
-        cm: 0.01,
-        dm: 0.1,
-        m: 1
-    };
 
     onMouseLeftClick(event) {
         if (this.isClickSuppressed)
@@ -397,7 +411,27 @@ export class WMouse {
 
         if (AppState.isPlanModeActive && AppState.wallPlacingEnabled) {
             this.wallPlaceClick(event);
-        } else { //TODO:: ezt kivenni h orthoval is selectelhessek DEPRECATED
+        } else if(AppState.wallPaintState) {
+            const intersects = this.getIntersects(event, null, 1);
+
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                const wall = intersect.object.userData.root;
+
+                if (wall instanceof Wall) {
+                    const worldPos = intersect.point.clone();
+                    const hex = document.getElementById("wall-painter").value;
+                    const pickedColor = new THREE.Color(hex);
+
+                    // Determine which side of the wall the click was on
+                    const signedDistance = wall.wallPlane.distanceToPoint(worldPos);
+                    const layerKey = signedDistance >= 0 ? 'insideLayer' : 'outsideLayer';
+
+                    wall.onColorApply(pickedColor, layerKey);
+                }
+            }
+        }
+        else {
             let intersects = this.getIntersects(event, null, 1);
 
             const maxDepth = Math.min(intersects.length, 3); //TODO: raycastert kikene szervezni mostmar...
@@ -542,18 +576,16 @@ export class WMouse {
     }
 
     generateFloor() {
-        Wall.updateCornersVisibility(ObjectFilter.placedWalls);
-
-        ObjectFilter.placedWalls.forEach(placedWall => {
-            this.newWalls.forEach(newWall => {
-                newWall.subtractWallGeometry(placedWall);
+        this.newWalls.forEach(newWall => {
+            ObjectFilter.placedWalls.forEach(placedWall => {
+            placedWall.subtractWallGeometry(newWall);
             })
         })
 
         if (this.newCornerPoints.length < 2) return; // need at least 2 points to form a line
 
         if (!this.newCornerPoints.at(0).equals(this.newCornerPoints.at(this.newCornerPoints.length-1))) {
-            alert("Start and end points does not matches!");
+            //alert("Start and end points does not matches!");
         }
 
         const floorMesh = ThreeGeometry.createExtrudedFloor(this.newCornerPoints);
@@ -583,20 +615,6 @@ export class WMouse {
             scene.remove(this.distanceLabel.sprite);
             this.distanceLabel = null;
         }
-    }
-
-    createCrosshair() {
-        this.crosshair.style.position = "absolute";
-        this.crosshair.style.width = "8px";
-        this.crosshair.style.height = "8px";
-        this.crosshair.style.background = "white";
-        this.crosshair.style.opacity = 0.2;
-        this.crosshair.style.borderRadius = "50%";
-        this.crosshair.style.top = "50%";
-        this.crosshair.style.left = "50%";
-        this.crosshair.style.transform = "translate(-50%, -50%)";
-        this.crosshair.style.zIndex = "1000";
-        document.body.appendChild(this.crosshair);
     }
 
     manageZoomInPlanMode() {
@@ -641,7 +659,7 @@ export class WMouse {
         }
     }
 
-    showColorPicker(e) {
+    showColorPicker() {
         if (!this.hoveredObject || !this.hoveredObject.material) return;
 
         const targetObject = this.hoveredObject;

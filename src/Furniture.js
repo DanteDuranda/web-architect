@@ -43,7 +43,8 @@ class Furniture extends WObject {
         loader.load(gltfPath, (gltf) => {
             const model = gltf.scene;
 
-            model.position.y += 0.1; // place above the floor | TODO: transformcontrols stayed at 0 y coordinate...
+            if(this.catalogItem.gizmoType === "horizontal")
+                model.position.y += 0.1; // place above the floor | TODO: transformcontrols stayed at 0 y coordinate...
 
             if (!this.userData.materialColorMap) {
                 this.userData.materialColorMap = {};
@@ -191,7 +192,6 @@ class Furniture extends WObject {
 
         if (this.catalogItem.sizeLimits) {
             this.scale.x = Math.min(this.catalogItem.sizeLimits.maxX, Math.max(this.catalogItem.sizeLimits.minX, this.scale.x));
-            this.scale.y = Math.min(this.catalogItem.sizeLimits.maxY, Math.max(this.catalogItem.sizeLimits.minY, this.scale.y));
             this.scale.z = Math.min(this.catalogItem.sizeLimits.maxZ, Math.max(this.catalogItem.sizeLimits.minZ, this.scale.z));
 
             if(AppState.debugEnabled)
@@ -205,6 +205,8 @@ class Furniture extends WObject {
             Y: parseFloat((this.originalDimensions.Y * this.scale.y).toFixed(2)),
             Z: parseFloat((this.originalDimensions.Z * this.scale.z).toFixed(2))
         };
+
+        console.log(this.dimensions);
     }
 
     onDelete() {
@@ -212,19 +214,11 @@ class Furniture extends WObject {
             this.userData.model.traverse(child => {
                 if (child.isMesh) {
 
-                    if (child.geometry) {
+                    if (child.geometry)
                         child.geometry.dispose();
-                    }
 
-                    const materials = Array.isArray(child.material) ? child.material : [child.material];
-                    materials.forEach(material => {
-                        ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'bumpMap', 'emissiveMap'].forEach(mapType => {
-                            if (material[mapType]) {
-                                material[mapType].dispose();
-                            }
-                        });
-                        material.dispose();
-                    });
+                    if (!child || !child.material)
+                        this.materialOnDelete(child);
                 }
             });
         }
@@ -250,7 +244,7 @@ class Furniture extends WObject {
 
         for (const material of materials)
             material.dispose?.();
-        
+
         modelChild.material = null;
     }
 

@@ -7,6 +7,10 @@ const glassWidth = 1.0;
 const glassHeight = 1.0;
 const glassDepth = 0.02;
 
+const doorWidth = 0.9;
+const doorHeight = 1.8;
+const doorDepth = 0.05;
+
 const glassMaterial = new THREE.MeshPhysicalMaterial({
     roughness: 0.3,
     metalness: 0.3,
@@ -18,29 +22,37 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
     clearcoat: 1
 });
 
+const doorMaterial = new THREE.MeshStandardMaterial({
+    transparent: true,
+    opacity: 0
+});
+
 class WinDoor extends THREE.Group {
     constructor(wall, type = "plane") {
         super();
         this.position.y = 0.8;
         this.isHighlighted = false;
 
-        const CSGGeometry = ThreeGeometry.CreateCube(1.1, 1.1, wall.userData.dimensions.wallWidth, 0xFF0000);
+        let frameWidth = type === "door" ? doorWidth : glassWidth;
+        let frameHeight = type === "door" ? doorHeight : glassHeight;
+
+        const CSGGeometry = ThreeGeometry.CreateCube(frameWidth + 0.1, frameHeight + 0.1, wall.userData.dimensions.wallWidth, 0xFF0000);
         CSGGeometry.name = "csg";
         CSGGeometry.visible = false;
 
         // glass
-        const glassGeometry = new THREE.BoxGeometry(glassWidth, glassHeight, glassDepth);
-        const windowGlass = new THREE.Mesh(glassGeometry, glassMaterial);
+        const glassGeometry = new THREE.BoxGeometry(doorWidth, doorHeight, doorDepth); //TODO: itt romlik el az uveg xdd
+        const windowGlass = new THREE.Mesh(glassGeometry, type === "door" ? doorMaterial : glassMaterial);
         windowGlass.position.set(0, 0, 0);
         windowGlass.name = "windowGlass";
         windowGlass.userData.root = this;
         this.add(windowGlass);
 
         const parts = [
-            { name: 'left', object: ThreeGeometry.CreateCube(0.1, 1.1, 0.1, 0xFFFFFFF) }, // 10cm 110cm 10cm
-            { name: 'right', object: ThreeGeometry.CreateCube(0.1, 1.1, 0.1, 0xFFFFFFF) },
-            { name: 'top', object: ThreeGeometry.CreateCube(1.1, 0.1, 0.1, 0xFFFFFFF) },
-            { name: 'bottom', object: ThreeGeometry.CreateCube(1.1, 0.1, 0.1, 0xFFFFFFF) }
+            { name: 'left', object: ThreeGeometry.CreateCube(0.1, frameHeight + 0.1, 0.1, 0xFFFFFFF) },
+            { name: 'right', object: ThreeGeometry.CreateCube(0.1, frameHeight + 0.1, 0.1, 0xFFFFFFF) },
+            { name: 'top', object: ThreeGeometry.CreateCube(frameWidth + 0.1, 0.1, 0.1, 0xFFFFFFF) },
+            { name: 'bottom', object: ThreeGeometry.CreateCube(frameWidth + 0.1, 0.1, 0.1, 0xFFFFFFF) }
         ];
 
         this.userData = {
@@ -54,10 +66,10 @@ class WinDoor extends THREE.Group {
             isAttached: false
         };
 
-        parts[0].object.position.set(-0.5, 0, 0);
-        parts[1].object.position.set(0.5, 0, 0);
-        parts[2].object.position.set(0, 0.5, 0);
-        parts[3].object.position.set(0, -0.5, 0);
+        parts[0].object.position.set(-frameWidth / 2, 0, 0);
+        parts[1].object.position.set(frameWidth / 2, 0, 0);
+        parts[2].object.position.set(0, frameHeight / 2, 0);
+        parts[3].object.position.set(0, -frameHeight / 2, 0);
 
         parts.forEach(({ object }) => {
             object.userData.root = this;
@@ -190,38 +202,6 @@ class WinDoor extends THREE.Group {
         this.userData.dimensions = value;
     }
 
-    get dimensionX() {
-        return this.userData.dimensions.X;
-    }
-
-    set dimensionX(value) {
-        this.userData.dimensions.X = value;
-    }
-
-    get dimensionY() {
-        return this.userData.dimensions.Y;
-    }
-
-    set dimensionY(value) {
-        this.userData.dimensions.Y = value;
-    }
-
-    get dimensionZ() {
-        return this.userData.dimensions.Z;
-    }
-
-    set dimensionZ(value) {
-        this.userData.dimensions.Z = value;
-    }
-
-    get parts() {
-        return this.userData.parts;
-    }
-
-    set parts(newParts) {
-        this.userData.parts = newParts;
-    }
-
     get centerCubeMesh() {
         return this.userData.centerCubeMesh;
     }
@@ -236,10 +216,6 @@ class WinDoor extends THREE.Group {
 
     set boundingWireframe(value) {
         this.userData.boundingWireframe = value;
-    }
-
-    get windowGlass() {
-        return this.userData.windowGlass;
     }
 
     set windowGlass(value) {

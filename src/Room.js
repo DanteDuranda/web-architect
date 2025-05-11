@@ -1,7 +1,8 @@
 import {WObject} from "./WObject.js";
 import CSG from "../THREE-CSGMesh-master/three-csg.js";
+import {AppState} from "./AppState.js";
 
-const FLOOR_HEIGHT = 0.1;
+
 
 export class Room extends WObject {
 
@@ -73,11 +74,14 @@ export class Room extends WObject {
         const currentFloor = this.floor;
         const newFloor = floor;
 
-        console.log(currentFloor.geometry.index);
-        console.log(currentFloor.geometry.attributes.position);
+        if(AppState.debugEnabled) {
+            console.log(currentFloor.geometry.index);
+            console.log(currentFloor.geometry.attributes.position);
 
-        console.log(newFloor.geometry.index);
-        console.log(newFloor.geometry.attributes.position);
+            console.log(newFloor.geometry.index);
+            console.log(newFloor.geometry.attributes.position);
+        }
+
 
         if (!currentFloor || !newFloor) return;
         if (!currentFloor.geometry || !newFloor.geometry) return;

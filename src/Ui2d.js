@@ -13,7 +13,6 @@ export class Telemetry {
         document.body.appendChild(this.fpsDisplay);
     }
 
-
     static updateStats() {
         const now = performance.now();
         this.frameCount++;

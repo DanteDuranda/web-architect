@@ -59,7 +59,6 @@ export class WTransformControl extends TransformControls {
     #rayLines = [];
     #highlightedBoxes = []
     #rotationLabel;
-    #sizeLabels = [];
     #snappingThresh;
     #snapAngle;
 
@@ -85,12 +84,13 @@ export class WTransformControl extends TransformControls {
             this.addEventListener('objectChange', () => {
                 const obj = this.object;
 
-                if (obj?.userData?.dimensions && obj instanceof Furniture) {
+                if (obj?.userData?.dimensions && obj instanceof Furniture && this.mode === 'scale') {
                     obj.onResize();
                 }
             });
         }
 
+        this.rotationSnapState = false;
         this.#snappingThresh = THREE.MathUtils.degToRad(10);
         this.#snapAngle = THREE.MathUtils.degToRad(45);
 
@@ -152,7 +152,9 @@ export class WTransformControl extends TransformControls {
 
         document.getElementById('paint-button').classList.add('disabled');
 
-        AppState.removeFromPreviewScene();
+        if (this.object instanceof Furniture) {
+            AppState.removeFromPreviewScene();
+        }
 
         super.detach();
     }
@@ -264,7 +266,7 @@ export class WTransformControl extends TransformControls {
             }
 
             let dimensions = this.object.dimensions;
-            //console.log(dimensions);
+            // console.log(dimensions);
 
             const localOffset = new THREE.Vector3(
                 (dimensions.X / 2) * Math.sign(direction.x),
@@ -359,14 +361,17 @@ export class WTransformControl extends TransformControls {
             return;
         }
 
-        const current = this.object.rotation[axis];
-        const snapped = Math.round(current / this.#snapAngle) * this.#snapAngle;
         this.#updateRotationLabel(this.object.position.clone());
         this.#rotationLabel.visible = true;
 
-        if (Math.abs(current - snapped) < this.#snappingThresh) {
-            if (current !== snapped) {
-                this.object.rotation[axis] = snapped;
+        if(this.rotationSnapState) {
+            const current = this.object.rotation[axis];
+            const snapped = Math.round(current / this.#snapAngle) * this.#snapAngle;
+
+            if (Math.abs(current - snapped) < this.#snappingThresh) {
+                if (current !== snapped) {
+                    this.object.rotation[axis] = snapped;
+                }
             }
         }
 

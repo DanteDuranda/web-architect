@@ -6,6 +6,8 @@ export class SideBar {
 
     #widthInput;
     #heightInput;
+    #transformControlsAngleSnapInput;
+
     #planModeContent;
     #designModeContent;
 
@@ -15,10 +17,12 @@ export class SideBar {
         this.sideBar = document.querySelector(".side-bar");
         this.wallHeight = 2.1;
         this.wallWidth = 0.2;
+        this.transformControlsAngleSnap = false;
         this.isWallPlacingActive = false;
 
         this.#widthInput = null;
         this.#heightInput = null;
+        this.#transformControlsAngleSnapInput = false;
 
         this.chairFilterBt = null; // TODO: ne reseteljen a filter mod valtasnal
         this.tableFilterBt = null;
@@ -46,7 +50,17 @@ export class SideBar {
         this.applyColorButton.addEventListener('click', event => {
             AppState.originalObject.onColorApply(AppState.previewSceneObject.userData.materialColorMap);
             this.togglePreviewPanel();
-        })
+        });
+
+        this.xrayButton = document.getElementById('disable-wall-xray');
+        this.xrayButton.addEventListener('click', event => {
+            this.toggleXrayState()
+        });
+
+        this.wallPaitButton = document.getElementById('paint-wall-button');
+        this.wallPaitButton.addEventListener('click', event => {
+            this.toggleWallPaint();
+        });
 
         this.furnitureCatalog = new FurnitureCatalog();
 
@@ -55,6 +69,41 @@ export class SideBar {
         this.#preloadSidebarContent().then(() => { // preload content files for plan and design modes
             this.updateSidebar(true);
         });
+    }
+
+    toggleWallPaint(wallPaintState = null) {
+        let currentwallPaintState;
+
+        if (wallPaintState === null) {
+            currentwallPaintState = AppState.wallPaintState;
+            wallPaintState = !currentwallPaintState;
+        }
+
+        AppState.wallPaintState = wallPaintState;
+
+        if (wallPaintState)
+            this.wallPaitButton.classList.add('active');
+        else {
+            this.wallPaitButton.classList.remove('active');
+        }
+    }
+
+    toggleXrayState(xrayState = null) {
+        let currentXrayStatus;
+
+        if (xrayState === null) {
+            currentXrayStatus = AppState.isXrayEnabled;
+            xrayState = !currentXrayStatus;
+        }
+
+        AppState.isXrayEnabled = xrayState;
+
+        if (xrayState)
+            this.xrayButton.classList.add('active');
+        else {
+            AppState.resetWallsVisibility();
+            this.xrayButton.classList.remove('active');
+        }
     }
 
     togglePreviewPanel(visibility = null) {
@@ -89,28 +138,26 @@ export class SideBar {
     }
 
     async #preloadSidebarContent() {
-        try {
-            const planResponse = await fetch('/style/component/sidebar-plan.html');
-            if (!planResponse.ok) {
-                throw new Error('Failed to fetch sidebar-plan.html: ' + planResponse.statusText);
-            }
+        let errorMessage = "";
 
+        const planResponse = await fetch('/style/component/sidebar-plan.html');
+        if (!planResponse.ok)
+            errorMessage += 'Failed to load sidebar-plan.html: ' + planResponse.statusText + "\n";
+        else
             this.#planModeContent = await planResponse.text();
 
-            const designResponse = await fetch('/style/component/sidebar-design.html');
-            if (!designResponse.ok) {
-                throw new Error('Failed to fetch sidebar-design.html: ' + designResponse.statusText);
-            }
-
+        const designResponse = await fetch('/style/component/sidebar-design.html'); // fixed path typo
+        if (!designResponse.ok)
+            errorMessage += 'Failed to load sidebar-design.html: ' + designResponse.statusText + "\n";
+        else
             this.#designModeContent = await designResponse.text();
 
-        } catch (err) {
-            console.error('Error loading sidebar content:', err);
-        }
+        if (errorMessage !== "")
+            alert("Error while loading the sidebar's content:\n" + errorMessage);
     }
 
-    updateSidebar(isPlanModeActive) {
-        if (isPlanModeActive) {
+    updateSidebar() {
+        if (AppState.isPlanModeActive) {
             if (this.#planModeContent) { // load cached plan mode content
                 this.sideBar.innerHTML = this.#planModeContent;
 
@@ -126,6 +173,14 @@ export class SideBar {
                     this.#heightInput.addEventListener("input", () => this.setHeight(this.#heightInput.value));
                 }
 
+                if (this.#transformControlsAngleSnapInput) {
+                    this.#transformControlsAngleSnapInput.checked = this.transformControlsAngleSnap;
+                    this.#transformControlsAngleSnapInput.addEventListener("change", () => {
+                        this.transformControlsAngleSnap = this.#transformControlsAngleSnapInput.checked;
+                        this.transformControls.rotationSnapState = this.#transformControlsAngleSnapInput.checked;
+                    });
+                }
+
                 const toggleButton = document.getElementById('toggle-wall-draw');
                 if (toggleButton) {
                     toggleButton.addEventListener('click', this.#toggleWallDrawHandler.bind(this));
@@ -138,25 +193,43 @@ export class SideBar {
             if (this.#designModeContent) { // load cached design mode content
                 this.sideBar.innerHTML = this.#designModeContent;
                 this.furnitureCatalog.loadCatalogItems();
+                this.restoreFilterButtons();
 
-                this.sideBar.addEventListener('click', (event) => {
-                    if (event.target && event.target.id === 'chair-type-bt') {
-                        this.furnitureCatalog.setFilters(null, 'chair', event.target);
-                    }
-                    if (event.target && event.target.id === 'table-type-bt') {
-                        this.furnitureCatalog.setFilters(null, 'table', event.target);
-                    }
-                    if (event.target && event.target.id === 'office-category-bt') {
-                        this.furnitureCatalog.setFilters('office', null, event.target);
-                    }
-                    if (event.target && event.target.id === 'lroom-category-bt') {
-                        this.furnitureCatalog.setFilters('lroom', null, event.target);
-                    }
-                });
+                const chairBt = document.getElementById('chair-type-bt');
+                const tableBt = document.getElementById('table-type-bt');
+                const etcBt = document.getElementById('etc-type-bt');
+                const officeBt = document.getElementById('office-category-bt');
+                const lroomBt = document.getElementById('lroom-category-bt');
+                const kitchenBt = document.getElementById('kitchen-category-bt');
+
+                if (chairBt) chairBt.addEventListener('click', () => this.furnitureCatalog.setFilters(null, 'chair', chairBt));
+                if (tableBt) tableBt.addEventListener('click', () => this.furnitureCatalog.setFilters(null, 'table', tableBt));
+                if (etcBt) etcBt.addEventListener('click', () => this.furnitureCatalog.setFilters(null, 'other', etcBt));
+                if (officeBt) officeBt.addEventListener('click', () => this.furnitureCatalog.setFilters('office', null, officeBt));
+                if (lroomBt) lroomBt.addEventListener('click', () => this.furnitureCatalog.setFilters('lroom', null, lroomBt));
+                if (kitchenBt) kitchenBt.addEventListener('click', () => this.furnitureCatalog.setFilters('kitchen', null, kitchenBt));
             }
         }
     }
 
+    restoreFilterButtons() {
+        const roomButtons = document.querySelectorAll("#room-category-bt-container .room-category-button");
+        const furnitureButtons = document.querySelectorAll("#furniture-category-bt-container .room-category-button");
+
+        roomButtons.forEach(button => {
+            const type = button.dataset.room; // ensure you add this attribute to your HTML
+            if (type === this.furnitureCatalog.roomTypeFilter) {
+                button.classList.add("active");
+            }
+        });
+
+        furnitureButtons.forEach(button => {
+            const type = button.dataset.category; // ensure this attribute too
+            if (type === this.furnitureCatalog.furnitureTypeFilter) {
+                button.classList.add("active");
+            }
+        });
+    }
 
     handleUnitRadioButtons() {
         const radioToCheck = document.querySelector(`input[name="unit"][value="${this.unit}"]`);
@@ -223,6 +296,7 @@ export class SideBar {
     #updateWallInputFields() {
         this.#widthInput = document.getElementById('width');
         this.#heightInput = document.getElementById('height');
+        this.#transformControlsAngleSnapInput = document.getElementById('tcontrol-rotation-snap-cb');
     }
 
     #toggleWallDrawHandler(event) {
@@ -234,16 +308,6 @@ export class SideBar {
 }
 
 export class CatalogItem {
-    /**
-     * Creates a new catalog item.
-     * @param {string} id - Unique ID of the item (e.g., 'chair-00000').
-     * @param {string} type - Type of the item (e.g., 'catalog-furniture').
-     * @param {string} name - Display name of the item.
-     * @param roomType
-     * @param gizmoType
-     * @param resizable
-     * @param sizeLimits
-     */
     constructor(id, type, name, roomType, gizmoType, resizable, sizeLimits) {
         this.catalogId = id;
         this.type = type;
@@ -255,8 +319,7 @@ export class CatalogItem {
         this.resizable = resizable;
         this.sizeLimits = sizeLimits;
 
-        this.category = id.split('-')[0];
-        this.imageSrc = `res/image/${this.category}/${id}.png`;
+        this.imageSrc = `res/image/${this.type}/${id}.png`;
         this.modelPath = `res/models/${id}.glb`;
     }
 }
@@ -288,10 +351,19 @@ class Catalog {
 }
 
 class FurnitureCatalog extends Catalog {
-    static roomTypeFilter = null;
-    static furnitureTypeFilter = null;
+
+    constructor() {
+        super();
+        this.roomTypeFilter = null;
+        this.furnitureTypeFilter = null;
+    }
 
     async loadCatalogItems() {
+        if (SideBar.catalogItems.length > 0) {
+            this.filterItems();
+            return;
+        }
+
         const catalogContainer = document.getElementById("catalog");
 
         try {
@@ -302,7 +374,7 @@ class FurnitureCatalog extends Catalog {
 
             const items = xmlDoc.getElementsByTagName("CatalogItem");
 
-            if(items.length == 0)
+            if(items.length === 0)
                 throw new Error("failed to load catalog items");
 
             for (let item of items) {
@@ -330,7 +402,6 @@ class FurnitureCatalog extends Catalog {
                 const catalogItemDomElement = this.#createElement(catalogItem);
                 catalogContainer.appendChild(catalogItemDomElement);
 
-                /*save items*/
                 SideBar.catalogItems.push(catalogItem);
                 SideBar.catalogItemsDOMElement.set(catalogItem.catalogId, catalogItemDomElement);
             }
@@ -375,11 +446,19 @@ class FurnitureCatalog extends Catalog {
         let needToUpdateCatalog = false;
 
         if(roomTypeFilter) {
-            this.roomTypeFilter = roomTypeFilter;
+            if(this.roomTypeFilter === roomTypeFilter)
+                this.roomTypeFilter = null;
+            else
+                this.roomTypeFilter = roomTypeFilter;
+
             needToUpdateCatalog = true;
             this.toggleActive(clickedButton, roomButtons);
         } else if (furnitureTypeFilter) {
-            this.furnitureTypeFilter = furnitureTypeFilter;
+            if(this.furnitureTypeFilter === furnitureTypeFilter)
+                this.furnitureTypeFilter = null;
+            else
+                this.furnitureTypeFilter = furnitureTypeFilter;
+
             needToUpdateCatalog = true;
             this.toggleActive(clickedButton, furnitureButtons);
         }
@@ -389,12 +468,12 @@ class FurnitureCatalog extends Catalog {
     }
 
     toggleActive(clickedButton, buttonGroup) {
-        buttonGroup.forEach(button => {
-            if (button !== clickedButton) {
-                button.classList.remove("active");
-            }
-        });
-        clickedButton.classList.add("active");
+        const isActive = clickedButton.classList.contains("active");
+
+        buttonGroup.forEach(button => button.classList.remove("active"));
+        if (!isActive) {
+            clickedButton.classList.add("active");
+        }
     }
 
     /**
@@ -425,13 +504,13 @@ class FurnitureCatalog extends Catalog {
 
         const label = document.createElement("p");
         label.classList.add("catalog-label");
+        label.classList.add("label");
         label.textContent = catalogItem.name;
 
         container.appendChild(button);
         container.appendChild(label);
         return container;
     }
-
 
     #failResponse(){
         const label = document.createElement("p");

@@ -6,9 +6,9 @@
   <link rel="stylesheet" href="/style/component/sidebars.css">
 </head>
 <body>
-<h3 class="heading">Plan mode</h3>
+<h3 class="heading label">Plan mode</h3>
 
-<h4 class="subheading">Wall builder</h4>
+<h4 class="subheading label">Wall builder</h4>
 
 <div class="box" style="display: flex; align-items: center; justify-content: space-between;">
   <div>
@@ -40,42 +40,37 @@
   </button>
 </div>
 
-<h4 class="subheading">Grid Settings</h4>
+<h4 class="subheading label">Grid Settings</h4>
 
 <div class="box">
   <div class="grid-settings">
-
-    <label>
+    <p class="label">snap to:</p>
+    <label class="label">
       <input type="radio" name="unit" value="m"> m
     </label>
     <br>
-    <label>
+    <label class="label">
       <input type="radio" name="unit" value="dm"> dm
     </label>
     <br>
-    <label>
+    <label class="label">
       <input type="radio" name="unit" value="cm"> cm
     </label>
-
-    <div class="grid-options">
-      <label>
-        <input type="checkbox" id="snapToGrid" class="checkbox"> Snap to Grid
-      </label>
-      <br>
-      <label>
-        <input type="checkbox" id="snapToWall" class="checkbox"> Snap to Wall
-      </label>
-    </div>
-
   </div>
+
+  <label class="label">
+    transform controls rotation snap at 45°
+    <input type="checkbox" id="tcontrol-rotation-snap-cb">
+  </label>
 </div>
 
-<h4 class="subheading">windows and doors</h4>
+<h4 class="subheading label">windows and doors</h4>
 
 <div class="catalog-section">
   <button class="catalog-button" draggable="true" data-type="plain" style="background-image: url('res/ui/window-plain-bt.png');"></button>
   <button class="catalog-button" draggable="true" data-type="vertical" style="background-image: url('res/ui/window-vertical-bt.png');"></button>
   <button class="catalog-button" draggable="true" data-type="cross" style="background-image: url('res/ui/window-cross-bt.png');"></button>
+  <button class="catalog-button" draggable="true" data-type="door" style="background-image: url('res/ui/door-bt.png');"></button>
 </div>
 
 </body>
