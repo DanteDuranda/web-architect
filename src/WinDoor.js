@@ -10,7 +10,6 @@ const glassDepth = 0.02;
 
 const doorWidth = 0.9;
 const doorHeight = 1.8;
-const doorDepth = 0.05;
 
 const glassMaterial = new THREE.MeshPhysicalMaterial({
     roughness: 0.3,
@@ -42,7 +41,7 @@ class WinDoor extends WObject {
         CSGGeometry.visible = false;
 
         // glass
-        const glassGeometry = new THREE.BoxGeometry(doorWidth, doorHeight, doorDepth); //TODO: itt romlik el az uveg xdd
+        const glassGeometry = new THREE.BoxGeometry(frameWidth, frameHeight, glassDepth);
         const windowGlass = new THREE.Mesh(glassGeometry, type === "door" ? doorMaterial : glassMaterial);
         windowGlass.position.set(0, 0, 0);
         windowGlass.name = "windowGlass";

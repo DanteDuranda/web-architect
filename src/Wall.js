@@ -6,7 +6,7 @@ import {WObject} from "./WObject.js";
 import {AppState} from "./AppState.js";
 
 const HIGHLIGHT_MATERIAL = new THREE.MeshBasicMaterial({
-    color: 0xAAAAAA,
+    color: 0XFFA500,
     transparent: true,
     opacity: 0.5,
     wireframe: false, // debug purposes...
