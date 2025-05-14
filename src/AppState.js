@@ -331,6 +331,10 @@ export class AppState {
     static isObjectSelected() {
         return AppState.previewSceneObject != null;
     }
+
+    static updateWTCtranslateUnit(unit) {
+        this.wmouse.wTransformControls.setTranslationSnap(AppState.wmouse.gridHelperGridSizes[unit]);
+    }
 }
 
 export class WMouse {

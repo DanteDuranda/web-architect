@@ -24,12 +24,6 @@ export class SideBar {
         this.#heightInput = null;
         this.#transformControlsAngleSnapInput = false;
 
-        this.chairFilterBt = null; // TODO: ne reseteljen a filter mod valtasnal
-        this.tableFilterBt = null;
-
-        this.officeCategoryBt = null;
-        this.lroomCategoryBt = null;
-
         this.unit = "m";
 
         this.#planModeContent = null;  // cached sidebar-plan.html
@@ -240,6 +234,7 @@ export class SideBar {
         document.querySelectorAll('input[name="unit"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 this.unit = document.querySelector('input[name="unit"]:checked').value;
+                AppState.updateWTCtranslateUnit(this.unit);
             });
         });
     }
