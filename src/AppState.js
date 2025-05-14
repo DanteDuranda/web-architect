@@ -241,7 +241,7 @@ export class AppState {
 
         ObjectFilter.placedRooms.forEach((room) => {
             room.setWallsVisibility(true);
-            room.setLabelsVisibility(true);
+            room.setLabelsVisibility(!AppState.wmouse.wTransformControls.object);
         })
 
         AppState.wmouse.wTransformControls.switchCamera(cameraOrtho);
@@ -421,16 +421,25 @@ export class WMouse {
                 const intersect = intersects[0];
                 const wall = intersect.object.userData.root;
 
+                const hexColor = document.getElementById("wall-painter").value;
+                const color = new THREE.Color(hexColor);
+
                 if (wall instanceof Wall) {
                     const worldPos = intersect.point.clone();
-                    const hex = document.getElementById("wall-painter").value;
-                    const pickedColor = new THREE.Color(hex);
 
                     // which side of the wall the click was on
                     const signedDistance = wall.wallPlane.distanceToPoint(worldPos);
                     const layerKey = signedDistance >= 0 ? 'insideLayer' : 'outsideLayer';
 
-                    wall.onColorApply(pickedColor, layerKey);
+                    wall.onColorApply(color, layerKey);
+                } else if (intersect.object.name === "floor"){
+
+                    const color = new THREE.Color(hexColor);
+                    const object = intersect.object;
+
+                    if (object.material && object.material.color) {
+                        object.material.color.set(color);
+                    }
                 }
             }
         }
@@ -598,6 +607,8 @@ export class WMouse {
             room.subtractFloorGeometry(floorMesh);
         })
 
+        floorMesh.layers.set(1);
+        floorMesh.name = "floor";
         scene.add(floorMesh);
         this.newCornerPoints = [];
 

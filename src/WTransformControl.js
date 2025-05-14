@@ -136,6 +136,12 @@ export class WTransformControl extends TransformControls {
         super.attach(otherObject);
         this.#handleGizmoModes(this.mode);
         this.#updateSizeHandle();
+
+        if(AppState.isPlanModeActive) {
+            ObjectFilter.placedRooms.forEach((room) => {
+                room.setLabelsVisibility(false);
+            })
+        }
     }
 
     detach() {
@@ -154,6 +160,12 @@ export class WTransformControl extends TransformControls {
 
         if (this.object instanceof Furniture) {
             AppState.removeFromPreviewScene();
+        }
+
+        if(AppState.isPlanModeActive) {
+            ObjectFilter.placedRooms.forEach((room) => {
+                room.setLabelsVisibility(true);
+            })
         }
 
         super.detach();

@@ -22,11 +22,11 @@ export class Room extends WObject {
         this.userData.paintSurfaceArea = this.calculatePaintSurfaceArea();
         this.userData.area = this.calculateArea();
 
-        this.label = PlanLabel.createLabel();
+        this.roomLabel = PlanLabel.createLabel();
         this.updateLabel();
 
         if (floor && floor.parent) {
-            floor.parent.add(this.label);
+            floor.parent.add(this.roomLabel);
         }
     }
 
@@ -48,15 +48,14 @@ export class Room extends WObject {
     }
 
     calculateArea() {
-        let points = this.roomWalls.map(wall => wall.p1);
+        let startPoints = this.roomWalls.map(wall => wall.p1);
 
-        if (!points[0].equals(points[points.length - 1])) { // polygon close
-            points.push(points[0]);
-        }
+        if (!startPoints[0].equals(startPoints[startPoints.length - 1])) // polygon close
+            startPoints.push(startPoints[0]);
 
         let area = 0;
-        for (let i = 0; i < points.length - 1; i++) {
-            area += (points[i].x * points[i + 1].z) - (points[i + 1].x * points[i].z); // shoelace formula
+        for (let i = 0; i < startPoints.length - 1; i++) {
+            area += (startPoints[i].x * startPoints[i + 1].z) - (startPoints[i + 1].x * startPoints[i].z); // shoelace formula
         }
 
         return Math.abs(area) / 2;
@@ -124,9 +123,9 @@ export class Room extends WObject {
     updateLabel() {
         const center = this.calculateCenter();
 
-        if (center && this.label) {
-            this.label.element.innerHTML = `Area: ${this.area.toFixed(2)} m² <br> Paint surface: ${this.paintSurfaceArea.toFixed(2)} m²`;
-            this.label.position.set(center.x, 0.1, center.z);
+        if (center && this.roomLabel) {
+            this.roomLabel.element.innerHTML = `area: ${this.area.toFixed(2)} m² <br> paintable surface: ${this.paintSurfaceArea.toFixed(2)} m²`;
+            this.roomLabel.position.set(center.x, 0.1, center.z);
         }
     }
 
@@ -152,7 +151,7 @@ export class Room extends WObject {
     }
 
     setLabelsVisibility(visible) {
-        this.label.visible = visible;
+        this.roomLabel.visible = visible;
         this.roomWalls.forEach((wall) => {
             wall.setLengthLabelVisible(visible);
         })
