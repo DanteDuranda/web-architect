@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import {CSS2DObject} from 'CSS2DRenderer';
+import {AppState} from "./AppState.js";
 
 export class PlanLabel {
     static createLabel() {
@@ -76,6 +77,7 @@ export class PlanCursor {
     // resize the cursor based on zoom level
     resizeCursor(zoom) {
         let cursorScale;
+
         if (zoom >= 1 && zoom < 5) {
             cursorScale = 1;
         } else if (zoom >= 5 && zoom < 20) {
@@ -89,7 +91,9 @@ export class PlanCursor {
         }
 
         this.cursorGroup.scale.setScalar(cursorScale);
-        // console.log(`cursor Scale: ${this.cursorGroup.scale.x}, zom Level: ${zoom}`);
+
+        if(AppState.debugEnabled)
+            console.log(`cursor Scale: ${this.cursorGroup.scale.x}, zoom Level: ${zoom}`);
     }
 
     drawDebugMarker(x, y, z, scene) {
@@ -115,13 +119,16 @@ export class PlanCursor {
             canvas.style.cursor = 'none';
 
             if (intersectionPoint) {
-                const snappedX = Math.round(intersectionPoint.x / unit) * unit;
-                const snappedZ = Math.round(intersectionPoint.z / unit) * unit;
+                const snappedX = intersectionPoint.x;
+                const snappedZ = intersectionPoint.z;
 
                 const precision = 1 / unit;
-                const snap = (val) => Math.round(val * precision) / precision;
 
+                const snap = (val) => Math.round(val * precision) / precision;
                 this.cursorGroup.position.set(snap(snappedX), wallHeight, snap(snappedZ));
+
+                if(AppState.debugEnabled)
+                    console.log("snappedX: " + snappedX + "; snappedZ: " + snappedZ);
             }
         } else {
             canvas.style.cursor = 'default';

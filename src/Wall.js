@@ -79,20 +79,6 @@ class Wall extends WObject {
         this.vertexLayers = null;
         this.layerColors = new Map();
 
-        if (this.wallGeometry && this.wallGeometry.geometry) {
-            this.wallGeometry.geometry.computeBoundingBox();
-
-            const boundingBox = this.wallGeometry.geometry.boundingBox.clone();
-            boundingBox.applyMatrix4(this.wallGeometry.matrixWorld);
-            this.userData.boundingBox = boundingBox;
-
-            const boxHelper = new THREE.BoxHelper(this.wallGeometry, 0xffff00); // yellow wireframe
-            boxHelper.name = "boundingWireframe";
-            this.userData.boundingWireframe = boxHelper;
-            this.add(boxHelper);
-        }
-
-
         this.updateMatrixWorld(true);
         this.updateWallLayers();
     }
@@ -375,11 +361,9 @@ class Wall extends WObject {
     onDelete() {
         if (this.wallGeometry) {
             this.wallGeometry.geometry?.dispose();
-            if (Array.isArray(this.wallGeometry.material)) {
-                this.wallGeometry.material.forEach(mat => mat.dispose?.());
-            } else {
-                this.wallGeometry.material?.dispose?.();
-            }
+
+            super.materialOnDelete(this.wallGeometry);
+
             this.remove(this.wallGeometry);
         }
 

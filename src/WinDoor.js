@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import { ThreeGeometry } from './ThreeGeometry.js';
 import { CatalogItem } from './UiControl.js';
+import {WObject} from "./WObject.js";
 
 const glassWidth = 1.0;
 const glassHeight = 1.0;
@@ -27,7 +28,7 @@ const doorMaterial = new THREE.MeshStandardMaterial({
     opacity: 0
 });
 
-class WinDoor extends THREE.Group {
+class WinDoor extends WObject {
     constructor(wall, type = "plane") {
         super();
         this.position.y = 0.8;

@@ -91,7 +91,6 @@ class Furniture extends WObject {
                 }
             });
 
-            this.convertResizeLimits();
         }, undefined, (error) => {
             console.error("unable to load the model", error);
         });
@@ -171,31 +170,32 @@ class Furniture extends WObject {
         this.boundingWireframe.visible = highlightState;
     }
 
-    convertResizeLimits() {
-        if (!this.catalogItem.sizeLimits)
-            return null;
-
-        const baseBox = new THREE.Box3().setFromObject(this.model);
-        const baseSize = new THREE.Vector3();
-        baseBox.getSize(baseSize);
-
-        this.catalogItem.sizeLimits.minX = this.catalogItem.sizeLimits.minX / baseSize.x;
-        this.catalogItem.sizeLimits.maxX = this.catalogItem.sizeLimits.maxX / baseSize.x;
-        this.catalogItem.sizeLimits.minZ = this.catalogItem.sizeLimits.minZ / baseSize.z;
-        this.catalogItem.sizeLimits.maxZ = this.catalogItem.sizeLimits.maxZ / baseSize.z;
-        this.catalogItem.sizeLimits.minY = this.catalogItem.sizeLimits.minY / baseSize.y;
-        this.catalogItem.sizeLimits.maxY = this.catalogItem.sizeLimits.maxY / baseSize.y;
-    }
-
     onResize() {
+        const limits = this.catalogItem.sizeLimits;
+        if (!limits) return;
+
+        // check if its a valid dimension
+        let newDims = {
+            X: this.originalDimensions.X * this.scale.x,
+            Y: this.originalDimensions.Y * this.scale.y,
+            Z: this.originalDimensions.Z * this.scale.z,
+        };
+
+        // clamp to real-world limits (in meters)
+        newDims.X = Math.min(limits.maxX, Math.max(limits.minX, newDims.X));
+        newDims.Y = Math.min(limits.maxY, Math.max(limits.minY, newDims.Y));
+        newDims.Z = Math.min(limits.maxZ, Math.max(limits.minZ, newDims.Z));
+
+        // apply new scale to match clamped dimensions
+        this.scale.x = newDims.X / this.originalDimensions.X;
+        this.scale.y = newDims.Y / this.originalDimensions.Y;
+        this.scale.z = newDims.Z / this.originalDimensions.Z;
+
         this.updateFurnitureDimensions();
 
-        if (this.catalogItem.sizeLimits) {
-            this.scale.x = Math.min(this.catalogItem.sizeLimits.maxX, Math.max(this.catalogItem.sizeLimits.minX, this.scale.x));
-            this.scale.z = Math.min(this.catalogItem.sizeLimits.maxZ, Math.max(this.catalogItem.sizeLimits.minZ, this.scale.z));
-
-            if(AppState.debugEnabled)
-                console.log(`x=${this.scale.x.toFixed(2)}, z=${this.scale.z.toFixed(2)}, y=${this.scale.y.toFixed(2)}`);
+        if (AppState.debugEnabled) {
+            console.log("Clamped dimensions:", this.dimensions);
+            console.log("Resulting scale:", this.scale);
         }
     }
 
@@ -217,8 +217,8 @@ class Furniture extends WObject {
                     if (child.geometry)
                         child.geometry.dispose();
 
-                    if (!child || !child.material)
-                        this.materialOnDelete(child);
+                    if (child.material)
+                        super.materialOnDelete(child);
                 }
             });
         }
@@ -237,15 +237,6 @@ class Furniture extends WObject {
         this.userData.model = null;
         this.userData.boundingWireframe = null;
         this.userData.boundingBox = null;
-    }
-
-    materialOnDelete(modelChild) {
-        const materials = Array.isArray(modelChild.material) ? modelChild.material : [modelChild.material];
-
-        for (const material of materials)
-            material.dispose?.();
-
-        modelChild.material = null;
     }
 
     get model() {

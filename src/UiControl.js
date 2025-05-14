@@ -379,13 +379,15 @@ class FurnitureCatalog extends Catalog {
 
             for (let item of items) {
                 const id = item.getAttribute("id");
-                const type = item.getAttribute("type");
                 const name = item.getElementsByTagName("Name")[0].textContent;
+
+                const type = item.getAttribute("type");
                 const roomType = item.getElementsByTagName("RoomType")[0].textContent;
 
                 const gizmoType = item.getElementsByTagName("GizmoType")[0].textContent;
                 const resizableTag = item.getElementsByTagName("Resizable")[0];
                 const isResizable = resizableTag.textContent.trim() === "true";
+
                 let sizeLimits = null;
                 if (isResizable) {
                     sizeLimits = {
@@ -399,7 +401,7 @@ class FurnitureCatalog extends Catalog {
                 }
 
                 const catalogItem = new CatalogItem(id, type, name, roomType, gizmoType, isResizable, sizeLimits);
-                const catalogItemDomElement = this.#createElement(catalogItem);
+                const catalogItemDomElement = this.#createCatalogElement(catalogItem);
                 catalogContainer.appendChild(catalogItemDomElement);
 
                 SideBar.catalogItems.push(catalogItem);
@@ -477,9 +479,9 @@ class FurnitureCatalog extends Catalog {
     }
 
     /**
-     * @returns { HTMLElement } Generated catalog item.
+     * @returns { HTMLElement } generated catalog item.
      */
-    #createElement(catalogItem) {
+    #createCatalogElement(catalogItem) {
         const container = document.createElement("div");
         container.classList.add("catalog-item");
         container.id = catalogItem.catalogId;
@@ -489,7 +491,7 @@ class FurnitureCatalog extends Catalog {
         button.style.backgroundImage = `url(${catalogItem.imageSrc})`;
         button.setAttribute("draggable", true);
 
-        // CLICK: fallback to placing at default height (e.g. 0,0,0)
+        // CLICK: fallback to placing at 0,0,0 or 0,0,0 + floor offset
         button.addEventListener("click", () => {
             const event = new CustomEvent("addFurnitureRequested", {
                 detail: { catalogItem: catalogItem }
@@ -498,8 +500,8 @@ class FurnitureCatalog extends Catalog {
         });
 
         // DRAG: transfer the catalogItem data
-        button.addEventListener("dragstart", (e) => {
-            e.dataTransfer.setData("application/json", JSON.stringify(catalogItem));
+        button.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("application/json", JSON.stringify(catalogItem));
         });
 
         const label = document.createElement("p");
@@ -514,7 +516,8 @@ class FurnitureCatalog extends Catalog {
 
     #failResponse(){
         const label = document.createElement("p");
-        label.textContent = "Oops.\nWe could not fetch the furnitures!";
+        label.classList.add("label");
+        label.textContent = "Oops.\nWe could not fetch the furniture catalog!";
 
         return label;
     }

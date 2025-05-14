@@ -11,7 +11,6 @@ import { OrbitControls } from 'OrbitControls';
 import { Telemetry } from "./Ui2d.js";
 import { CSS2DRenderer } from 'CSS2DRenderer';
 import {WinDoor} from "./WinDoor.js";
-import CSG from "../THREE-CSGMesh-master/three-csg.js";
 
 
 const MIN_ZOOM = 1;
@@ -125,10 +124,10 @@ canvas.addEventListener("dragover", (event) => {
 canvas.addEventListener("drop", (event) => {
     event.preventDefault();
 
-    const data = event.dataTransfer.getData("application/json");
-    if (!data) return;
+    const catalogData = event.dataTransfer.getData("application/json");
+    if (!catalogData) return;
 
-    const catalogItem = JSON.parse(data);
+    const catalogItem = JSON.parse(catalogData);
 
     const mouse = new THREE.Vector2(
         (event.clientX / canvas.clientWidth) * 2 - 1,
@@ -240,10 +239,10 @@ export class AppState {
         AppState.wmouse.orbControlOrtho.enabled = true;
         AppState.wmouse.orbControlPersp.enabled = false;
 
-        ObjectFilter.placedWalls.forEach((wall) => {
-            wall.visible = true;
-            wall.setLengthLabelVisible(true);
-        });
+        ObjectFilter.placedRooms.forEach((room) => {
+            room.setWallsVisibility(true);
+            room.setLabelsVisibility(true);
+        })
 
         AppState.wmouse.wTransformControls.switchCamera(cameraOrtho);
 
@@ -273,6 +272,10 @@ export class AppState {
 
         ObjectFilter.placedWalls.forEach((wall) => {
             wall.setLengthLabelVisible(false);
+        })
+
+        ObjectFilter.placedRooms.forEach((room) => {
+            room.setLabelsVisibility(false);
         })
 
         AppState.toggle3dCursor(true);
@@ -350,7 +353,7 @@ export class WMouse {
         this.isClickSuppressed = false;
 
         this.isPlacingWall = false;
-        this.wallStartPoint = null;
+        this.wallPlacingStartPoint = null;
         this.startPoint = new THREE.Vector3();
         this.tempWallVisualizer = null;
         this.distanceLabel = null;
@@ -423,7 +426,7 @@ export class WMouse {
                     const hex = document.getElementById("wall-painter").value;
                     const pickedColor = new THREE.Color(hex);
 
-                    // Determine which side of the wall the click was on
+                    // which side of the wall the click was on
                     const signedDistance = wall.wallPlane.distanceToPoint(worldPos);
                     const layerKey = signedDistance >= 0 ? 'insideLayer' : 'outsideLayer';
 
@@ -434,7 +437,7 @@ export class WMouse {
         else {
             let intersects = this.getIntersects(event, null, 1);
 
-            const maxDepth = Math.min(intersects.length, 3); //TODO: raycastert kikene szervezni mostmar...
+            const maxDepth = Math.min(intersects.length, 3);
             for (let i = 0; i < maxDepth; i++) {
                 if (intersects[i] && intersects[i].object.userData.root) {
                     if (!intersects[i].object.userData.root.visible)
@@ -460,7 +463,7 @@ export class WMouse {
             this.exitWallPlacement();
             this.generateFloor();
             this.startPoint = new THREE.Vector3();
-            scene.remove(this.wallStartPoint);
+            scene.remove(this.wallPlacingStartPoint);
         } else {
             if(this.wTransformControls.object) {
                 this.wTransformControls.detach();
@@ -471,7 +474,7 @@ export class WMouse {
     getIntersects(event, searchObject = null, layer = 0) {
         let mouse = new THREE.Vector2();
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1; // Remove +5
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         let raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, AppState.isPlanModeActive ? cameraOrtho : cameraPersp);
@@ -515,7 +518,7 @@ export class WMouse {
                 scene.add(this.distanceLabel);
             }
         } else {
-            // update the wall and its label while the moving
+            // update the wall and its label whiel the moving
             this.updateWall(this.tempWallVisualizer, this.startPoint, point, false);
             PlanLabel.updateLabel(this.distanceLabel, this.startPoint, point, distance);
         }
@@ -529,21 +532,22 @@ export class WMouse {
         point.z = this.planCursor.cursorGroup.position.z;
 
         this.newCornerPoints.push(point);
-        //console.log(cornerPoints);
-        if (!this.isPlacingWall) {
-            // start placing a wall
+
+        if(AppState.debugEnabled)
+            console.log(point);
+
+        if (!this.isPlacingWall) { // start placing a wall
             this.startPoint.copy(point);
             this.isPlacingWall = true;
 
-            this.wallStartPoint = this.planCursor.cornerToPoint(point, AppState.sideBar.wallWidth + 0.05, AppState.sideBar.wallHeight+0.01, 0xFFFF00);
-            scene.add(this.wallStartPoint);
-        } else {
-            // finalize the wall placement
+            this.wallPlacingStartPoint = this.planCursor.cornerToPoint(point, AppState.sideBar.wallWidth + 0.05, AppState.sideBar.wallHeight+0.01, 0xFFFF00);
+            scene.add(this.wallPlacingStartPoint);
+        } else { // finalize wall placement
             const finalizedWall = this.updateWall(this.tempWallVisualizer, this.startPoint, point, true);
 
-            let testWall = new Wall(finalizedWall, this.startPoint, point, AppState.sideBar.wallWidth, AppState.sideBar.wallHeight, 0x422800, this.distanceLabel);
-            this.newWalls.push(testWall);
-            scene.add(testWall);
+            let wallObject = new Wall(finalizedWall, this.startPoint, point, AppState.sideBar.wallWidth, AppState.sideBar.wallHeight, 0x422800, this.distanceLabel);
+            this.newWalls.push(wallObject);
+            scene.add(wallObject);
 
             this.resetTempWall();
             this.startPoint = point;
