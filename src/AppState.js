@@ -242,6 +242,7 @@ export class AppState {
         ObjectFilter.placedRooms.forEach((room) => {
             room.setWallsVisibility(true);
             room.setLabelsVisibility(!AppState.wmouse.wTransformControls.object);
+            room.setWindoorMarkersVisibility(true);
         })
 
         AppState.wmouse.wTransformControls.switchCamera(cameraOrtho);
@@ -276,6 +277,7 @@ export class AppState {
 
         ObjectFilter.placedRooms.forEach((room) => {
             room.setLabelsVisibility(false);
+            room.setWindoorMarkersVisibility(false);
         })
 
         AppState.toggle3dCursor(true);

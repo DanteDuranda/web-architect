@@ -40,7 +40,6 @@ class WinDoor extends WObject {
         CSGGeometry.name = "csg";
         CSGGeometry.visible = false;
 
-        // glass
         const glassGeometry = new THREE.BoxGeometry(frameWidth, frameHeight, glassDepth);
         const windowGlass = new THREE.Mesh(glassGeometry, type === "door" ? doorMaterial : glassMaterial);
         windowGlass.position.set(0, 0, 0);
@@ -63,7 +62,8 @@ class WinDoor extends WObject {
             boundingWireframe: null,
             windowGlass: windowGlass,
             wall: wall,
-            isAttached: false
+            isAttached: false,
+            marker: null
         };
 
         parts[0].object.position.set(-frameWidth / 2, 0, 0);
@@ -108,6 +108,8 @@ class WinDoor extends WObject {
         this.addWindowStyle(type);
 
         this.name = "windoor";
+
+        this.#addMarker(type, frameWidth, wall.userData.dimensions.wallWidth, wall.userData.dimensions.wallHeight);
     }
 
     addWindowStyle(type) {
@@ -137,6 +139,10 @@ class WinDoor extends WObject {
         this.visible = visibilityState
         this.userData.windowGlass.visible = visibilityState;
         this.userData.wall.visible = visibilityState;
+    }
+
+    toggleVisibleMarker(visible) {
+        this.userData.marker.visible = visible;
     }
 
     handleAttachDetach(attachState)
@@ -180,6 +186,20 @@ class WinDoor extends WObject {
         });
 
         this.parent?.remove(this);
+    }
+
+    #addMarker(type, frameWidth, wallWidth, wallHeight) {
+        const marker = new THREE.Mesh(
+            new THREE.PlaneGeometry(frameWidth, type === "door" ? wallWidth + 0.1 : wallWidth - 0.07),
+            new THREE.MeshBasicMaterial({ color: 0xfffbe9, transparent: true, opacity: 0.8 })
+        );
+        marker.rotation.x = -Math.PI / 2;
+        marker.position.y = wallHeight + 0.05;
+
+        marker.userData.root = this;
+        marker.layers.set(1);
+        this.userData.marker = marker;
+        this.add(marker);
     }
 
     /******************/

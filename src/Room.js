@@ -157,6 +157,14 @@ export class Room extends WObject {
         })
     }
 
+    setWindoorMarkersVisibility(visible) {
+        this.roomWalls.forEach((wall) => {
+            wall.winDoors.forEach((windoor) => {
+                windoor.toggleVisibleMarker(visible);
+            })
+        })
+    }
+
     get area() {
         return this.userData.area;
     }
