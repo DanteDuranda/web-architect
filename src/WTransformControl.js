@@ -194,8 +194,8 @@ export class WTransformControl extends TransformControls {
         this.camera = camera;
     }
 
-    //https://discourse.threejs.org/t/how-to-prevent-shrinking-transformcontrols/60714
-    //https://codepen.io/boytchev/pen/MWxOWga
+    // https://discourse.threejs.org/t/how-to-prevent-shrinking-transformcontrols/60714
+    // https://codepen.io/boytchev/pen/MWxOWga
     updateGizmoSize() {
         let size;
 
@@ -231,7 +231,7 @@ export class WTransformControl extends TransformControls {
     }
 
     updateRayLines(furniture, placedWalls) {
-        if (!this.object)
+        if (!this.object || this.object.name === "windoor")
             return;
 
         this.#resetHighlightedBoxes();
@@ -286,7 +286,7 @@ export class WTransformControl extends TransformControls {
                 (dimensions.Z / 2) * Math.sign(direction.z)
             )
 
-            // rotate offset to match object orientation
+            // rotation offset
             const rotatedOffset = localOffset.applyQuaternion(this.object.quaternion);
             const start = origin.clone().add(rotatedOffset);
 
