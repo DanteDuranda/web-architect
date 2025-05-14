@@ -32,7 +32,7 @@ const GizmoPresets = Object.freeze({
     HORIZONTAL: {
         translate: { x: true, y: false, z: true },
         rotate: { x: false, y: true, z: false },
-        scale: { x: true, y: true, z: true } // to let the user resize the object on the Y axis
+        scale: { x: true, y: false, z: true } // to let the user resize the object on the Y axis
     },
 
     FULL: {
@@ -108,13 +108,15 @@ export class WTransformControl extends TransformControls {
         if(this.object)
             return;
 
-        if (otherObject.name === "Wall") {   //TODO: ez itt szerintem osszevonhato lesz lassan
+        if (otherObject.name === "Wall") {
             this.setSpace("world");
             otherObject.handleAttachDetach(true);
         }
-        else if (otherObject.name === "windoor") {    //TODO: ez itt szerintem osszevonhato lesz lassan
+        else if (otherObject.name === "windoor") {
             this.setSpace("local");
             otherObject.handleAttachDetach(true);
+
+            document.getElementById('rotate').classList.add('disabled');
         }
         else { // furnitures from the catalog
             otherObject.userData.boundingWireframe.visible = true;
@@ -157,6 +159,7 @@ export class WTransformControl extends TransformControls {
         }
 
         document.getElementById('paint-button').classList.add('disabled');
+        document.getElementById('rotate').classList.remove('disabled');
 
         if (this.object instanceof Furniture) {
             AppState.removeFromPreviewScene();
