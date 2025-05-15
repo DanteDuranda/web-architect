@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+
+
 const FLOOR_HEIGHT = 0.1;
 
 class ThreeGeometry {
@@ -20,23 +22,17 @@ class ThreeGeometry {
     }
 
     static createExtrudedFloor(points) {
-        const shape = new THREE.Shape();
-        shape.moveTo(points[0].x, points[0].z);
+        const poligon = new THREE.Shape();
 
+        poligon.moveTo(points[0].x, points[0].z);
         for (let i = 1; i < points.length; i++) {
-            shape.lineTo(points[i].x, points[i].z);
+            poligon.lineTo(points[i].x, points[i].z);
         }
 
-        const extrudeSettings =
-            {
-                depth: FLOOR_HEIGHT,
-                bevelEnabled: false
-            };
+        const extrudeSettings = { depth: FLOOR_HEIGHT, bevelEnabled: false };
 
-        let color = Math.floor(Math.random() * 0xFFFFFF);
-
-        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
+        const geometry = new THREE.ExtrudeGeometry(poligon, extrudeSettings);
+        const material = new THREE.MeshBasicMaterial({ color: Math.floor(Math.random() * 0xFFFFFF), side: THREE.DoubleSide });
         const floorMesh = new THREE.Mesh(geometry, material);
 
         floorMesh.rotation.x = Math.PI / 2;

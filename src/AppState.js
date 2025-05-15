@@ -619,7 +619,6 @@ export class WMouse {
         this.newCornerPoints = [];
 
         ObjectFilter.addByInstance(this.newWalls);
-
         ObjectFilter.addByInstance(new Room(this.newWalls, floorMesh));
 
         this.newWalls = [];

@@ -35,16 +35,19 @@ export class Room extends WObject {
             return 0;
         }
 
-        return this.roomWalls.reduce((total, wall) => {
-            return total + (wall.length || 0);
-        }, 0);
+        let lengthSum = 0;
+
+        this.roomWalls.forEach(wall => {
+            lengthSum += wall.length;
+        });
+
+        return lengthSum;
     }
 
     calculatePaintSurfaceArea() {
-        const wallHeight = this.roomWalls[0]?.wallHeight || 0; // assumes uniform height
-        const circumference = this.calculateCircumference();
+        const wallHeight = this.roomWalls[0]?.wallHeight || 0;
 
-        return circumference * wallHeight;
+        return this.calculateCircumference() * wallHeight;
     }
 
     calculateArea() {
@@ -55,7 +58,7 @@ export class Room extends WObject {
 
         let area = 0;
         for (let i = 0; i < startPoints.length - 1; i++) {
-            area += (startPoints[i].x * startPoints[i + 1].z) - (startPoints[i + 1].x * startPoints[i].z); // shoelace formula
+            area += (startPoints[i + 1].z * startPoints[i].x) - (startPoints[i + 1].x * startPoints[i].z); // shoelace formula
         }
 
         return Math.abs(area) / 2;
@@ -88,7 +91,6 @@ export class Room extends WObject {
             console.log(newFloor.geometry.index);
             console.log(newFloor.geometry.attributes.position);
         }
-
 
         if (!currentFloor || !newFloor) return;
         if (!currentFloor.geometry || !newFloor.geometry) return;
