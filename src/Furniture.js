@@ -46,40 +46,40 @@ class Furniture extends WObject {
             if(this.catalogItem.gizmoType === "horizontal")
                 model.position.y += 0.1; // place above the floor | TODO: transformcontrols stayed at 0 y coordinate...
 
-            if (!this.userData.materialColorMap) {
+            if (!this.userData.materialColorMap)
                 this.userData.materialColorMap = {};
-            }
 
             const savedColors = this.userData.materialColorMap;
 
             model.traverse(child => {
                 child.userData.root = this;
 
-                if (child.isMesh && child.material) {
-                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                if (!child.isMesh || !child.material)
+                    return;
 
-                    materials.forEach(material => {
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
 
-                        const savedHex = savedColors[child.name];
-                        if (savedHex && material.color) {
-                            material.color.set(savedHex);
+                materials.forEach(material => {
+                    const savedHexColor = savedColors[child.name];
+
+                    if (savedHexColor && material.color) { // the part has user defined color
+                        material.color.set(savedHexColor);
+                    } else if (material.userData?.default_color) { // the model just loaded in with blender attribute color
+                        material.color.set(material.userData.default_color);
+
+                        if (material.color)
+                            savedColors[child.name] = `#${material.color.getHexString()}`;
+                    }
+
+                    setTimeout(() => {
+                        if (material.map?.image) {
+                            material.map.anisotropy = ANISOTROPY_MAX;
+                            material.map.needsUpdate = true;
                         }
-                        else if (material.userData?.default_color) {
-                            material.color.set(material.userData.default_color);
-                            if (material.color) {
-                                savedColors[child.name] = `#${material.color.getHexString()}`;
-                            }
-                        }
-
-                        setTimeout(() => {
-                            if (material.map?.image) {
-                                material.map.anisotropy = ANISOTROPY_MAX;
-                                material.map.needsUpdate = true;
-                            }
-                        }, 1000);
-                    });
-                }
+                    }, 1000);
+                });
             });
+
 
             this.add(model);
             this.userData.model = model; // at this state the model will be loaded (its async)
@@ -124,9 +124,9 @@ class Furniture extends WObject {
         // in meters
         this.dimensions =
         {
-            "X": parseFloat(size.x.toFixed(2)), // width
-            "Y": parseFloat(size.y.toFixed(2)), // height
-            "Z": parseFloat(size.z.toFixed(2)), // depth
+            "X": parseFloat(size.x.toFixed(2)),
+            "Y": parseFloat(size.y.toFixed(2)),
+            "Z": parseFloat(size.z.toFixed(2)),
         };
 
         this.originalDimensions =
@@ -195,7 +195,7 @@ class Furniture extends WObject {
 
         if (AppState.debugEnabled) {
             console.log("Clamped dimensions:", this.dimensions);
-            console.log("Resulting scale:", this.scale);
+            console.log("Result scale:", this.scale);
         }
     }
 

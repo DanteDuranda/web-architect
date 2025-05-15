@@ -747,7 +747,6 @@ export class ObjectFilter {
     }
 
     static removeWall(wall) {
-        // Remove from placedWalls
         this.placedWalls = this.placedWalls.filter(f => f !== wall);
 
         for (let room of this.placedRooms) {
@@ -757,6 +756,11 @@ export class ObjectFilter {
             {
                 room.deleteFloor();
                 this.removeRoom();
+            }
+            else
+            {
+                room.updateStats();
+                room.updateLabel();
             }
         }
     }

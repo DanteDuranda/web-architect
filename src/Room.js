@@ -65,7 +65,11 @@ export class Room extends WObject {
     }
 
     deleteFloor() {
-        this.floor.parent.remove(this.floor);
+        if (this.floor.parent) {
+            this.floor.parent.remove(this.floor);
+            this.roomLabel.parent.remove(this.roomLabel);
+            this.roomLabel = null;
+        }
 
         if (this.floor.geometry) {
             this.floor.geometry.dispose();
@@ -131,6 +135,11 @@ export class Room extends WObject {
         }
     }
 
+    updateStats() {
+        this.userData.paintSurfaceArea = this.calculatePaintSurfaceArea();
+        this.userData.area = this.calculateArea();
+    }
+
     calculateCenter() {
         if (!this.roomWalls || this.roomWalls.length === 0) return new THREE.Vector3(0, 0, 0);
 
@@ -153,6 +162,9 @@ export class Room extends WObject {
     }
 
     setLabelsVisibility(visible) {
+        if(!this.roomLabel)
+            return;
+
         this.roomLabel.visible = visible;
         this.roomWalls.forEach((wall) => {
             wall.setLengthLabelVisible(visible);
