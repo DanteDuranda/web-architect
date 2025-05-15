@@ -181,12 +181,12 @@ class Furniture extends WObject {
             Z: this.originalDimensions.Z * this.scale.z,
         };
 
-        // clamp to real-world limits (in meters)
+        // clamp to limits (in meters)
         newDims.X = Math.min(limits.maxX, Math.max(limits.minX, newDims.X));
         newDims.Y = Math.min(limits.maxY, Math.max(limits.minY, newDims.Y));
         newDims.Z = Math.min(limits.maxZ, Math.max(limits.minZ, newDims.Z));
 
-        // apply new scale to match clamped dimensions
+        // apply new scale to match clamped dims
         this.scale.x = newDims.X / this.originalDimensions.X;
         this.scale.y = newDims.Y / this.originalDimensions.Y;
         this.scale.z = newDims.Z / this.originalDimensions.Z;
@@ -206,7 +206,8 @@ class Furniture extends WObject {
             Z: parseFloat((this.originalDimensions.Z * this.scale.z).toFixed(2))
         };
 
-        console.log(this.dimensions);
+        if(AppState.debugEnabled)
+            console.log(this.dimensions);
     }
 
     onDelete() {

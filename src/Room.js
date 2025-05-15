@@ -23,7 +23,7 @@ export class Room extends WObject {
         this.userData.area = this.calculateArea();
 
         this.roomLabel = PlanLabel.createLabel();
-        this.updateLabel();
+        this.updateLabel(true);
 
         if (floor && floor.parent) {
             floor.parent.add(this.roomLabel);
@@ -126,18 +126,19 @@ export class Room extends WObject {
         currentFloor.geometry.needsUpdate = true;
     }
 
-    updateLabel() {
+    updateLabel(needtoSetPos=false) {
         const center = this.calculateCenter();
 
         if (center && this.roomLabel) {
             this.roomLabel.element.innerHTML = `area: ${this.area.toFixed(2)} m² <br> paintable surface: ${this.paintSurfaceArea.toFixed(2)} m²`;
-            this.roomLabel.position.set(center.x, 0.1, center.z);
+
+            if (needtoSetPos)
+                this.roomLabel.position.set(center.x, 0.1, center.z);
         }
     }
 
     updateStats() {
         this.userData.paintSurfaceArea = this.calculatePaintSurfaceArea();
-        this.userData.area = this.calculateArea();
     }
 
     calculateCenter() {

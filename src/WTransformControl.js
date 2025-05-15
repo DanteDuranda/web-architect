@@ -84,7 +84,7 @@ export class WTransformControl extends TransformControls {
             this.addEventListener('objectChange', () => {
                 const obj = this.object;
 
-                if (obj?.userData?.dimensions && obj instanceof Furniture && this.mode === 'scale') {
+                if (obj.catalogItem.resizable && obj?.userData?.dimensions && obj instanceof Furniture && this.mode === 'scale') {
                     obj.onResize();
                 }
             });
@@ -115,7 +115,6 @@ export class WTransformControl extends TransformControls {
         else if (otherObject.name === "windoor") {
             this.setSpace("local");
             otherObject.handleAttachDetach(true);
-
             document.getElementById('rotate').classList.add('disabled');
         }
         else { // furnitures from the catalog
