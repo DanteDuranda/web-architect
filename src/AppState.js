@@ -184,7 +184,7 @@ export class AppState {
 
         previewCanvas.addEventListener('mousemove', this.wmouse.onPreviewMouseMove.bind(this.wmouse));
         previewCanvas.addEventListener("click", () => {
-            AppState.wmouse.showColorPicker();
+            AppState.wmouse.attachColorPicker();
         });
 
         document.getElementById("planModeBt").addEventListener("click", AppState.activatePlanMode);
@@ -662,58 +662,51 @@ export class WMouse {
         raycaster.setFromCamera(mousePos, previewCamera);
         const intersects = raycaster.intersectObjects(previewScene.children, true);
 
+        // reset
         AppState.previewSceneObject.traverse(child => {
-            if (child.isMesh && child.material?.emissive) {
+            if (child.isMesh && child.material?.emissive)
                 child.material.emissive.set(0x000000);
-            }
         });
 
+        // choose
         if (intersects.length > 0) {
-            const first = intersects[0].object;
-            if (first.material?.emissive) {
-                first.material.emissive.set(0x444444);
+            const hit = intersects[0].object;
+            if (hit.material?.emissive) {
+                hit.material.emissive.set(0x444444);
             }
-            this.hoveredObject = first;
+            this.hoveredObject = hit;
         } else {
             this.hoveredObject = null;
         }
     }
 
-    showColorPicker() {
-        if (!this.hoveredObject || !this.hoveredObject.material) return;
+    attachColorPicker() {
+        if (!this.hoveredObject || !this.hoveredObject.material)
+            return;
 
         const targetObject = this.hoveredObject;
         const colorPicker = document.getElementById("furniture-painter");
-        if (!colorPicker) return;
 
-        if (targetObject.material.color) {
+        if (!colorPicker)
+            return;
+
+        if (targetObject.material.color)
             colorPicker.value = `#${targetObject.material.color.getHexString()}`;
-        }
 
         colorPicker.oninput = () => {
-            const hex = colorPicker.value;
             if (targetObject.material?.color) {
-                targetObject.material.color.set(hex);
+                targetObject.material.color.set(colorPicker.value);
                 targetObject.material.needsUpdate = true;
 
-                // Update materialColorMap on the root furniture object
-                const root = targetObject.userData?.root;
-                if (root) {
-                    if (!root.userData.materialColorMap) {
-                        root.userData.materialColorMap = {};
-                    }
-
-                    root.userData.materialColorMap[targetObject.name] = hex;
-                }
+                const root = targetObject.userData?.root; // update materialColorMap of the root
+                if (root)
+                    root.userData.materialColorMap[targetObject.name] = colorPicker.value;
             }
         };
+
     }
 }
 
-/**
- * @class ObjectFilter
- * @description Static class that manages a collection of furnitures.
- */
 export class ObjectFilter {
     static addedFurnitures = [];
     static placedWalls = [];

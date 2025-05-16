@@ -32,7 +32,7 @@ const GizmoPresets = Object.freeze({
     HORIZONTAL: {
         translate: { x: true, y: false, z: true },
         rotate: { x: false, y: true, z: false },
-        scale: { x: true, y: false, z: true } // to let the user resize the object on the Y axis
+        scale: { x: true, y: false, z: true }
     },
 
     FULL: {
@@ -80,15 +80,15 @@ export class WTransformControl extends TransformControls {
             this.add(distanceLabel);
             this.add(line);
             this.#rayLines.push({ line, direction: directions[i], distanceLabel: distanceLabel });
-
-            this.addEventListener('objectChange', () => {
-                const obj = this.object;
-
-                if (obj.catalogItem.resizable && obj?.userData?.dimensions && obj instanceof Furniture && this.mode === 'scale') {
-                    obj.onResize();
-                }
-            });
         }
+
+        this.addEventListener('objectChange', () => {
+            const obj = this.object;
+
+            if (obj.catalogItem.resizable && obj?.userData?.dimensions && obj instanceof Furniture && this.mode === 'scale') {
+                obj.onResize();
+            }
+        });
 
         this.rotationSnapState = false;
         this.#snappingThresh = THREE.MathUtils.degToRad(10);
@@ -136,7 +136,6 @@ export class WTransformControl extends TransformControls {
 
         super.attach(otherObject);
         this.#handleGizmoModes(this.mode);
-        this.#updateSizeHandle();
 
         if(AppState.isPlanModeActive) {
             ObjectFilter.placedRooms.forEach((room) => {
@@ -196,13 +195,11 @@ export class WTransformControl extends TransformControls {
         this.camera = camera;
     }
 
-    // https://discourse.threejs.org/t/how-to-prevent-shrinking-transformcontrols/60714
     // https://codepen.io/boytchev/pen/MWxOWga
     updateGizmoSize() {
         let size;
 
         if (this.camera.isPerspectiveCamera) {
-            // Perspective Camera: gizmo size will change based on camera's position and zoom
             size = 20 / this.position.distanceTo(this.camera.position) *
                 Math.min(1.9 * Math.tan(Math.PI * this.camera.fov / 360) / this.camera.zoom, 7);
 
@@ -361,10 +358,6 @@ export class WTransformControl extends TransformControls {
 
     #updateRotationLabel() {
         this.#rotationLabel.position.copy(this.object.position.clone());
-    }
-
-    #updateSizeHandle() {
-        //TODO
     }
 
     #handleRotation = () => {

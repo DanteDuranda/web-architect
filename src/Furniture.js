@@ -96,16 +96,15 @@ class Furniture extends WObject {
         });
     }
 
-    onColorApply(otherFurnitureMaterialMap) {
-        this.userData.materialColorMap = { ...otherFurnitureMaterialMap };
+    onColorApply(otherFurnitureMColorMap) {
+        this.userData.materialColorMap = { ...otherFurnitureMColorMap };
 
-        this.userData.model.traverse(child => {
-            if (child.isMesh && child.material) {
-                const savedHex = otherFurnitureMaterialMap[child.name];
-                if (savedHex && child.material.color) {
-                    child.material.color.set(savedHex);
-                    child.material.needsUpdate = true;
-                    this.userData.materialColorMap[child.name] = `#${child.material.color.getHexString()}`;
+        this.userData.model.traverse(originalChild => {
+            if (originalChild.isMesh && originalChild.material) {
+                const savedHex = this.userData.materialColorMap[originalChild.name];
+                if (savedHex && originalChild.material.color) {
+                    originalChild.material.color.set(savedHex);
+                    originalChild.material.needsUpdate = true;
                 }
             }
         });
