@@ -134,18 +134,4 @@ export class PlanCursor {
             canvas.style.cursor = 'default';
         }
     }
-
-    cornerToPoint(point, wallWidth, wallHeight, color) {
-        const radiusTop = wallWidth / 2;
-        const radiusBottom = wallWidth / 2;
-        const radialSegments = 32;
-
-        const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, wallHeight, radialSegments);
-        const material = new THREE.MeshBasicMaterial({ color: color });
-        const cylinder = new THREE.Mesh(geometry, material);
-
-        cylinder.position.set(point.x, point.y + wallHeight / 2, point.z);
-
-        return cylinder;
-    }
 }

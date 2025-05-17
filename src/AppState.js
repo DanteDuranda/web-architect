@@ -555,7 +555,7 @@ export class WMouse {
             this.startPoint.copy(point);
             this.isPlacingWall = true;
 
-            this.wallPlacingStartPoint = this.planCursor.cornerToPoint(point, AppState.sideBar.wallWidth + 0.05, AppState.sideBar.wallHeight+0.01, 0xFFFF00);
+            this.wallPlacingStartPoint = ThreeGeometry.CreateCylinder((AppState.sideBar.wallWidth + 0.05) / 2, AppState.sideBar.wallHeight+0.01, 0xFFFF00, point) //this.planCursor.cornerToPoint(point, AppState.sideBar.wallWidth + 0.05, AppState.sideBar.wallHeight+0.01, 0xFFFF00);
             scene.add(this.wallPlacingStartPoint);
         } else { // finalize wall placement
             const finalizedWall = this.updateWall(this.tempWallVisualizer, this.startPoint, point, true);

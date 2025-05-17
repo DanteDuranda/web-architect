@@ -281,11 +281,11 @@ export class SideBar {
     }
 
     setWidth(width) {
-        this.wallWidth = width;
+        this.wallWidth = parseFloat(width);
     }
 
     setHeight(height) {
-        this.wallHeight = height;
+        this.wallHeight = parseFloat(height);
     }
 
     #updateWallInputFields() {
