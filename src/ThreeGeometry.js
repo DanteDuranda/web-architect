@@ -13,12 +13,17 @@ class ThreeGeometry {
         return new THREE.Mesh(boxGeometry, boxMaterial);
     }
 
-    static CreateCylinder(width=1, height=1, color=0xffffff)
+    static CreateCylinder(width=1, height=1, color=0xffffff, position=null)
     {
         let cylinderGeometry = new THREE.CylinderGeometry(width, width, height);
         let cylinderMaterial = new THREE.MeshBasicMaterial({color: color});
 
-        return new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+        let cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial)
+
+        if (position)
+            cylinder.position.set(position.x, position.y + (height / 2), position.z);
+
+        return cylinder;
     }
 
     static createExtrudedFloor(points) {
