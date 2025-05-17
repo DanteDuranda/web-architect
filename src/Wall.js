@@ -14,7 +14,6 @@ const HIGHLIGHT_MATERIAL = new THREE.MeshBasicMaterial({
 
 const wallTexture = new THREE.TextureLoader().load('res/image/wall_1.png');
 wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
-wallTexture.anisotropy = 16;
 
 const wallSideMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
 
@@ -209,7 +208,7 @@ class Wall extends WObject {
         this.wallHeight = wallHeight;
 
         wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
-        wallTexture.anisotropy = 16;
+        wallTexture.anisotropy = AppState.ANISOTROPY_MAX;
 
         const unifiedWallMaterial = new THREE.MeshStandardMaterial({
             map: wallTexture,
@@ -273,13 +272,13 @@ class Wall extends WObject {
             winDoor.updateMatrixWorld(true);
             centerCube.updateMatrixWorld(true);
 
-            const clone = centerCube.clone();
-            clone.applyMatrix4(centerCube.matrixWorld);
-            clone.updateMatrix();
+            const cloneCC = centerCube.clone();
+            cloneCC.applyMatrix4(centerCube.matrixWorld);
+            cloneCC.updateMatrix();
 
             const bspWall = CSG.fromMesh(this.wallGeometry);
-            const bspHole = CSG.fromMesh(clone);
-            const bspResult = bspWall.subtract(bspHole);
+            const bspCC = CSG.fromMesh(cloneCC);
+            const bspResult = bspWall.subtract(bspCC);
 
             const resultMesh = CSG.toMesh(bspResult, this.wallGeometry.matrixWorld, this.wallGeometry.material);
             this.wallGeometry.geometry.dispose(); // dispose first for safety
@@ -311,13 +310,9 @@ class Wall extends WObject {
         currentWall.geometry = resultMesh.geometry;
         currentWall.geometry.needsUpdate = true;
 
-        this.subtracted = true;
         this.onWallGeometryUpdate();
     }
 
-    areWallsOverlapping(start1, end1, start2, end2) {
-
-    }
 
     onWallGeometryUpdate() {
         this.updateMatrixWorld(true);
