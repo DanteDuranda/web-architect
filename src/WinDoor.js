@@ -36,7 +36,7 @@ class WinDoor extends WObject {
         let frameWidth = type === "door" ? doorWidth : glassWidth;
         let frameHeight = type === "door" ? doorHeight : glassHeight;
 
-        const CSGGeometry = ThreeGeometry.CreateCube(frameWidth + 0.1, frameHeight + 0.1, wall.userData.dimensions.wallWidth, 0xFF0000);
+        const CSGGeometry = ThreeGeometry.CreateCube(frameWidth + 0.1, frameHeight + 0.1, wall.userData.dimensions.wallWidth + 0.1, 0xFF0000);
         CSGGeometry.name = "csg";
         CSGGeometry.visible = false;
 
@@ -54,18 +54,6 @@ class WinDoor extends WObject {
             { name: 'bottom', object: ThreeGeometry.CreateCube(frameWidth + 0.1, 0.1, 0.1, 0xFFFFFFF) }
         ];
 
-        this.userData = {
-            catalogItem: new CatalogItem("testWindow", "testWindow", "testWindow", "testWindow", "only_xy", true, null),
-            dimensions: { "X": -1, "Y": -1, "Z": -1 },
-            parts: [],
-            centerCubeMesh: CSGGeometry,
-            boundingWireframe: null,
-            windowGlass: windowGlass,
-            wall: wall,
-            isAttached: false,
-            marker: null
-        };
-
         parts[0].object.position.set(-frameWidth / 2, 0, 0);
         parts[1].object.position.set(frameWidth / 2, 0, 0);
         parts[2].object.position.set(0, frameHeight / 2, 0);
@@ -78,6 +66,18 @@ class WinDoor extends WObject {
             object.layers.enable(0);
             this.add(object);
         });
+
+        this.userData = {
+            catalogItem: new CatalogItem("testWindow", "testWindow", "testWindow", "testWindow", "only_xy", true, null),
+            dimensions: { "X": -1, "Y": -1, "Z": -1 },
+            parts: parts,
+            centerCubeMesh: CSGGeometry,
+            boundingWireframe: null,
+            windowGlass: windowGlass,
+            wall: wall,
+            isAttached: false,
+            marker: null
+        };
 
         this.userData.windowGlass.layers.set(1);
         this.userData.windowGlass.layers.enable(3);
