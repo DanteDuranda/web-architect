@@ -160,7 +160,7 @@ class Furniture extends WObject {
         this.add(wireframe);
     }
 
-    handleAttachDetach(attachState) //TODO: igy mar lehet ez itt tulzas, de hatha irni kell ide meg valamit
+    handleAttachDetach(attachState) // TODO: igy mar lehet ez itt tulzas, de hatha irni kell ide meg valamit
     {
         this.toggleHighlight(attachState);
     }
