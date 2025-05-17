@@ -9,6 +9,11 @@ class WObject extends THREE.Group {
         throw new Error(`${this.constructor.name}: onDelete() not implemented`);
     }
 
+    handleAttachDetach(attachState)
+    {
+        throw new Error(`${this.constructor.name}: handleAttachDetach() not implemented`);
+    }
+
     materialOnDelete(modelChild) {
         const materials = Array.isArray(modelChild.material) ? modelChild.material : [modelChild.material];
 
