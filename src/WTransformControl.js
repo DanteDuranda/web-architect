@@ -79,7 +79,7 @@ export class WTransformControl extends TransformControls {
 
             this.add(distanceLabel);
             this.add(line);
-            this.#rayLines.push({ line, direction: directions[i], distanceLabel: distanceLabel });
+            this.#rayLines.push({ line, direction: directions[i], distanceLabel });
         }
 
         this.addEventListener('objectChange', () => {
@@ -110,16 +110,12 @@ export class WTransformControl extends TransformControls {
 
         if (otherObject.name === "Wall") {
             this.setSpace("world");
-            otherObject.handleAttachDetach(true);
         }
         else if (otherObject.name === "windoor") {
             this.setSpace("local");
-            otherObject.handleAttachDetach(true);
             document.getElementById('rotate').classList.add('disabled');
         }
-        else { // furnitures from the catalog
-            otherObject.userData.boundingWireframe.visible = true;
-
+        else { // furniture from the catalog
             if(otherObject.userData.catalogItem.resizable)
                 document.getElementById('scale').classList.remove('disabled');
             else {
@@ -134,7 +130,10 @@ export class WTransformControl extends TransformControls {
             AppState.addToPreviewScene(copy, otherObject);
         }
 
+        otherObject.handleAttachDetach(true);
+
         super.attach(otherObject);
+
         this.#handleGizmoModes(this.mode);
 
         if(AppState.isPlanModeActive) {
@@ -249,8 +248,8 @@ export class WTransformControl extends TransformControls {
         this.#rayLines.forEach(({ line, direction, distanceLabel }) => {
             const rotatedDirection = direction.clone().applyQuaternion(this.object.quaternion).normalize();
             const raycaster = new THREE.Raycaster(origin, rotatedDirection, 0, MAX_DISTANCE);
+            raycaster.layers.set(3);
 
-            raycaster.layers.set(3); // TODO: jo lenne a raycastra hasznalt layereket valahogy enumkent kezelni mert neha nem tudom kovetni...
             const targets = furniture.filter(obj => obj !== this.object);// --->
             targets.push(...placedWalls);                               // ----> union of the walls and the furnitures
 
@@ -265,11 +264,6 @@ export class WTransformControl extends TransformControls {
                 endPoint = intersects[0].point;
                 line.visible = true;
                 distanceLabel.visible = true;
-
-                const positions = line.geometry.attributes.position.array;
-                positions[3] = intersects[0].point.x
-                positions[4] = intersects[0].point.y
-                positions[5] = intersects[0].point.z
             } else {
                 endPoint = origin.clone().add(rotatedDirection.clone().multiplyScalar(MAX_DISTANCE));
                 line.visible = false;
@@ -277,7 +271,6 @@ export class WTransformControl extends TransformControls {
             }
 
             let dimensions = this.object.dimensions;
-            // console.log(dimensions);
 
             const localOffset = new THREE.Vector3(
                 (dimensions.X / 2) * Math.sign(direction.x),
@@ -285,18 +278,18 @@ export class WTransformControl extends TransformControls {
                 (dimensions.Z / 2) * Math.sign(direction.z)
             )
 
-            // rotation offset
-            const rotatedOffset = localOffset.applyQuaternion(this.object.quaternion);
+            const rotatedOffset = localOffset.applyQuaternion(this.object.quaternion); // rotation offset
+
             const start = origin.clone().add(rotatedOffset);
 
             line.geometry.setPositions([
                 start.x, start.y, start.z,
                 endPoint.x, endPoint.y, endPoint.z
             ]);
+
             line.geometry.attributes.position.needsUpdate = true;
 
-            const distance = start.distanceTo(endPoint).toFixed(2);
-            this.#updateDistanceLabel(distanceLabel, distance, start, endPoint);
+            this.#updateDistanceLabel(distanceLabel, start, endPoint);
         });
     }
 
@@ -349,26 +342,25 @@ export class WTransformControl extends TransformControls {
         this.#highlightedBoxes = [];
     }
 
-    #updateDistanceLabel(distanceLabel, distance, start, endPoint) {
-        const midPoint = new THREE.Vector3().addVectors(start, endPoint).multiplyScalar(0.5);
+    #updateDistanceLabel(distanceLabel, start, endPoint) {
+        const distance = start.distanceTo(endPoint).toFixed(2);
         const distanceInCm = (distance * 100).toFixed(0);
+
+        const midPoint = new THREE.Vector3().addVectors(start, endPoint).multiplyScalar(0.5);
+
         distanceLabel.position.copy(midPoint);
         distanceLabel.element.textContent = `${distanceInCm}cm`;
-    }
-
-    #updateRotationLabel() {
-        this.#rotationLabel.position.copy(this.object.position.clone());
     }
 
     #handleRotation = () => {
         const axis = this.axis?.toLowerCase(); // current active axis
 
-        if (this.mode !== 'rotate' || !this.isDragging || !this.object || !axis) {
+        if (!axis || this.mode !== 'rotate' || !this.isDragging || !this.object) {
             this.#rotationLabel.visible = false;
             return;
         }
 
-        this.#updateRotationLabel(this.object.position.clone());
+        this.#rotationLabel.position.copy(this.object.position.clone());
         this.#rotationLabel.visible = true;
 
         if(this.rotationSnapState) {
@@ -382,8 +374,6 @@ export class WTransformControl extends TransformControls {
             }
         }
 
-        const value = this.object.rotation[axis];
-
-        this.#rotationLabel.element.textContent = `${THREE.MathUtils.radToDeg(value).toFixed(0)}°`;
+        this.#rotationLabel.element.textContent = `${THREE.MathUtils.radToDeg(this.object.rotation[axis]).toFixed(0)}°`;
     };
 }
