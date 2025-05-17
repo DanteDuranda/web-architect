@@ -38,8 +38,6 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true  });
 
 const cSS2DRenderer = new CSS2DRenderer({ element: document.getElementById('css2d-ui') });
 
-const ANISOTROPY_MAX = renderer.capabilities.getMaxAnisotropy();
-
 const NO_CULLING_LIMIT = 50;
 const cameraOrtho = new THREE.OrthographicCamera( // THREE.OrthographicCamera(left, right, top, bottom, near, far);
     NO_CULLING_LIMIT * aspectRatio / -2,
@@ -158,6 +156,8 @@ function onWindowResize() {
 }
 
 export class AppState {
+    static ANISOTROPY_MAX = renderer.capabilities.getMaxAnisotropy();
+
     static debugEnabled = false;
 
     static isPlanModeActive = false;
@@ -223,7 +223,7 @@ export class AppState {
     }
 
     static addFurnitureToScene(catalogItem, position = null) {
-        const furniture = new Furniture(catalogItem, ANISOTROPY_MAX);
+        const furniture = new Furniture(catalogItem, AppState.ANISOTROPY_MAX);
 
         if (position)
             furniture.position.copy(position);
