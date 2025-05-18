@@ -106,7 +106,6 @@ export class PlanCursor {
 
         scene.add(marker);
 
-        // remove after timeout
         setTimeout(() => {
             scene.remove(marker);
             marker.geometry.dispose();
