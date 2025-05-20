@@ -9,7 +9,6 @@ body {
     max-height: calc(100vh - 58px);
 }
 
-/* Optional: Custom Scrollbar */
 .scroll-area::-webkit-scrollbar {
     width: 8px;
 }
@@ -116,16 +115,16 @@ body {
 /* Furniture Catalog */
 .catalog-section {
     display: flex;
-    flex-wrap: wrap;  /* Allows items to wrap to a new line */
-    gap: 15px;  /* Adds spacing between items */
-    justify-content: flex-start; /* Aligns items to the left */
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: flex-start;
     padding: 15px;
     margin: 5px;
 
-    max-height: 400px;  /* Set a maximum height for the catalog */
-    overflow-y: auto;  /* Enables vertical scrolling if needed */
-    border: 2px #422800 dashed;  /* Optional: Adds a subtle border */
-    background: #fbeee0;  /* Optional: Light background */
+    max-height: 400px;
+    overflow-y: auto;
+    border: 2px #422800 dashed;
+    background: #fbeee0;
 }
 
 .catalog-section::-webkit-scrollbar {
@@ -141,7 +140,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100px; /* Set a fixed width for each item */
+    width: 100px;
     text-align: center;
 }
 
@@ -164,23 +163,23 @@ body {
 /* RoomType Section */
 .room-category-section {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); /* Adjusts column size dynamically */
-    gap: 15px;  /* Adds 20px spacing between items */
-    justify-content: start; /* Aligns items from the left */
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 15px;
+    justify-content: start;
     padding: 5px;
     margin: 5px;
 
-    max-height: 400px;  /* Set a maximum height for the catalog */
-    overflow-y: auto;  /* Enables vertical scrolling if needed */
-    border: 2px #422800 dashed;  /* Optional: Adds a subtle border */
-    background: #fbeee0;  /* Optional: Light background */
+    max-height: 400px;
+    overflow-y: auto;
+    border: 2px #422800 dashed;
+    background: #fbeee0;
 }
 
 .button-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100px; /* Set a fixed width for each item */
+    width: 100px;
     text-align: center;
 }
 
