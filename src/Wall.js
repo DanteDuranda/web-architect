@@ -63,17 +63,16 @@ class Wall extends WObject {
 
         this.setupWallMaterials(wallWidth, wallHeight);
 
-        const center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-        const wallDirection = new THREE.Vector3().subVectors(end, start).normalize();
-        const wallNormal = new THREE.Vector3(-wallDirection.z, 0, wallDirection.x).normalize();
+        const wallCenter = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
 
-        this.wallPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(wallNormal, center);
+        const wallDirection = new THREE.Vector3().subVectors(end, start);
+        const wallNormal = new THREE.Vector3(wallDirection.z, 0, -wallDirection.x).normalize();
+
+        this.wallPlane = new THREE.Plane();
+        this.wallPlane.setFromNormalAndCoplanarPoint(wallNormal, wallCenter);
+
         if (AppState.debugEnabled)
-        {
-            const planeHelper = new THREE.PlaneHelper(this.wallPlane, wallHeight, 0xFFA500);
-            planeHelper.position.copy(center);
-            this.add(planeHelper);
-        }
+            this.#createDebugVisualization(wallWidth, wallHeight, wallCenter, wallDirection, wallNormal);
 
         this.vertexLayers = null;
         this.layerColors = new Map();
@@ -83,15 +82,31 @@ class Wall extends WObject {
     }
 
     onColorApply(color, layerKey) {
-        const indices = this.vertexLayers?.[layerKey];
-        if (!indices) return;
+        const vertices = this.vertexLayers?.[layerKey];
+
+        if (!vertices)
+            return;
+
+        const colorAttr = this.wallGeometry.geometry.attributes.color;
+
+        const threshold  = 0.0001;
+
+        const r = colorAttr.getX(vertices[0]);
+        const g = colorAttr.getY(vertices[0]);
+        const b = colorAttr.getZ(vertices[0]);
+
+        if (
+            Math.abs(r - color.r) < threshold  &&
+            Math.abs(g - color.g) < threshold  &&
+            Math.abs(b - color.b) < threshold
+        ) {
+            return;
+        }
 
         this.layerColors.set(layerKey, color);
 
-        for (const index of indices) { // wall
+        for (const index of vertices) { // wall
             if (typeof index === 'number') {
-                const colorAttr = this.wallGeometry.geometry.attributes.color;
-
                 if (!colorAttr)
                     continue;
 
@@ -104,7 +119,6 @@ class Wall extends WObject {
                 const vertIndex = parseInt(vertIndexStr);
 
                 const indicator = this.pointIndicators[cornerIndex];
-                if (!indicator || !indicator.geometry?.attributes?.color) continue;
 
                 const colorAttr = indicator.geometry.attributes.color;
                 colorAttr.setXYZ(vertIndex, color.r, color.g, color.b);
@@ -114,54 +128,48 @@ class Wall extends WObject {
     }
 
     updateWallLayers() {
-        const geometry = this.wallGeometry.geometry;
-        const positionAttr = geometry.attributes.position;
-        const matrixWorld = this.wallGeometry.matrixWorld;
-
-        // Get plane normal and constant (a, b, c, d)
-        const plane = this.wallPlane;
-        const normal = plane.normal;
-        const constant = plane.constant;
-
         const insideLayer = [];
         const outsideLayer = [];
 
-        const tempVec = new THREE.Vector3();
+        const positionAttribute = this.wallGeometry.geometry.attributes.position;
 
-        // Helper to test and classify a vertex
-        const classifyVertex = (index, vertex) => {
-            const worldVertex = vertex.clone().applyMatrix4(matrixWorld);
-            const result = normal.dot(worldVertex) + constant;
+        const tempVector = new THREE.Vector3();
+
+        // wall geometry
+        for (let i = 0; i < positionAttribute.count; i++) {
+            tempVector.fromBufferAttribute(positionAttribute, i);
+
+            const worldVertex = tempVector.clone().applyMatrix4(this.wallGeometry.matrixWorld);
+            const result = this.wallPlane.distanceToPoint(worldVertex);
+
             if (result >= 0) {
-                insideLayer.push(index);
+                insideLayer.push(i);
             } else {
-                outsideLayer.push(index);
+                outsideLayer.push(i);
             }
-        };
 
-        // Classify wallGeometry vertices
-        for (let i = 0; i < positionAttr.count; i++) {
-            tempVec.fromBufferAttribute(positionAttr, i);
-            classifyVertex(i, tempVec);
+            if(AppState.debugEnabled)
+                this.#placeVertexVisualizer(worldVertex, result >= 0 ? 0x00ff00 : 0xff0000);
         }
 
-        // Classify point indicator (cylinder) vertices
-        /*pointIndicators dont share the same vertex buffer as the wall, their vertices dont have stable,
-        numeric indices in the wall's buffer. Using a unique string key avoids index collisions
-        and preserves identification per corner.*/
+        // pointIndicators
         this.pointIndicators.forEach((indicator, cornerIndex) => {
             const posAttr = indicator.geometry.attributes.position;
-            const worldMatrix = indicator.matrixWorld;
 
             for (let i = 0; i < posAttr.count; i++) {
-                tempVec.fromBufferAttribute(posAttr, i).applyMatrix4(worldMatrix);
-                const result = normal.dot(tempVec) + constant;
-                const globalIndex = `corner${cornerIndex}_${i}`;
+                const worldVertex = tempVector.clone().fromBufferAttribute(posAttr, i).applyMatrix4(indicator.matrixWorld);
+                const result = this.wallPlane.distanceToPoint(worldVertex);
+
+                const uid = `corner${cornerIndex}_${i}`;
+
                 if (result >= 0) {
-                    insideLayer.push(globalIndex);
+                    insideLayer.push(uid);
                 } else {
-                    outsideLayer.push(globalIndex);
+                    outsideLayer.push(uid);
                 }
+
+                if(AppState.debugEnabled)
+                    this.#placeVertexVisualizer(worldVertex, result >= 0 ? 0x00ff00 : 0xff0000, 0.005);
             }
         });
 
@@ -394,6 +402,28 @@ class Wall extends WObject {
 
     setLengthLabelVisible(visible) {
         this.userData.lengthLabel.visible = visible;
+    }
+
+    #createDebugVisualization(wallWidth, wallHeight, wallCenter, wallDirection, wallNormal) {
+        let centerIndicator = ThreeGeometry.CreateCylinder(wallWidth, wallHeight + 0.1, 0xFFA500, wallCenter);
+
+        const wallDirectionHelper = new THREE.ArrowHelper(wallDirection, this.p1, this.length + 2.5, 0xFFA500);
+
+        const normalHelper = new THREE.ArrowHelper(wallNormal, wallCenter, 1, 0xff0000);
+
+        const planeHelper = new THREE.PlaneHelper(this.wallPlane, wallHeight * 2, 0xFFA500);
+        planeHelper.position.copy(wallCenter);
+
+        this.add(centerIndicator);
+        this.add(wallDirectionHelper);
+        this.add(normalHelper);
+        this.add(planeHelper);
+    }
+
+    #placeVertexVisualizer(position, color = 0x000000, size = 0.02) {
+        const indicator = ThreeGeometry.CreateCube(size, size, size, color);
+        indicator.position.copy(position);
+        this.add(indicator);
     }
 
     get catalogItem() {

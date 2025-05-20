@@ -96,8 +96,11 @@ export class Room extends WObject {
             console.log(newFloor.geometry.attributes.position);
         }
 
-        if (!currentFloor || !newFloor) return;
-        if (!currentFloor.geometry || !newFloor.geometry) return;
+        if (!currentFloor || !newFloor)
+            return;
+
+        if (!currentFloor.geometry || !newFloor.geometry)
+            return;
 
         if (
             !currentFloor.geometry.attributes?.position ||

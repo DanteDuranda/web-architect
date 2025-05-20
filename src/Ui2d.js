@@ -1,3 +1,6 @@
+import * as THREE from 'three';
+
+
 export class Telemetry {
     static fpsDisplay = document.createElement("div");
 
@@ -9,7 +12,7 @@ export class Telemetry {
 
     static createTelemetryDisplay() {
         this.fpsDisplay.className = 'telemetry-display';
-        this.fpsDisplay.innerText = 'FPS: 0\nLatency: 0ms';
+        this.fpsDisplay.innerText = `FPS: 0\nLatency: 0ms\nThree.js: r${THREE.REVISION}`;
         document.body.appendChild(this.fpsDisplay);
     }
 
@@ -19,13 +22,13 @@ export class Telemetry {
 
         this.latency = now - this.lastFrameT;
 
-        if (now - this.lastUpdateT >= 1000) { // updates per sec
+        if (now - this.lastUpdateT >= 1000) { // per sec
             const fps = this.frameCount;
 
             this.frameCount = 0;
             this.lastUpdateT = now;
 
-            this.fpsDisplay.innerText = `FPS: ${fps}\nLATENCY: ${this.latency.toFixed(1)} ms`;
+            this.fpsDisplay.innerText = `FPS: ${fps}\nLAT: ${this.latency.toFixed(1)} ms\nThree.js: r${THREE.REVISION}`;
         }
 
         this.lastFrameT = now;

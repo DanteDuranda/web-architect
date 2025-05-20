@@ -74,6 +74,13 @@ function InitResources() {
     let hemisphereLMain = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
     scene.add(hemisphereLMain);
 
+    /*const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(10, 20, 10);
+    scene.add(directionalLight);TODO: kalibralni*/
+
     let hemisphereLPreview = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
     previewScene.add(hemisphereLPreview);
 
@@ -388,10 +395,10 @@ export class WMouse {
         });
 
         canvas.addEventListener('mouseup', (event) => {
-            const dx = Math.abs(event.clientX - this.mouseDownPosition.x);
-            const dy = Math.abs(event.clientY - this.mouseDownPosition.y);
+            const deltaX = Math.abs(event.clientX - this.mouseDownPosition.x);
+            const deltaY = Math.abs(event.clientY - this.mouseDownPosition.y);
 
-            if (dx > this.movementThreshold || dy > this.movementThreshold )
+            if (deltaX > this.movementThreshold || deltaY > this.movementThreshold )
                 this.isClickSuppressed = true;
         });
 
@@ -431,10 +438,7 @@ export class WMouse {
                 const color = new THREE.Color(hexColor);
 
                 if (wall instanceof Wall) {
-                    const worldPos = intersect.point.clone();
-
-                    // which side of the wall the click was on
-                    const signedDistance = wall.wallPlane.distanceToPoint(worldPos);
+                    const signedDistance = wall.wallPlane.distanceToPoint(intersect.point);
                     const layerKey = signedDistance >= 0 ? 'insideLayer' : 'outsideLayer';
 
                     wall.onColorApply(color, layerKey);
