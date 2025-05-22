@@ -194,7 +194,7 @@ class WinDoor extends WObject {
             new THREE.MeshBasicMaterial({ color: 0xfffbe9, transparent: true, opacity: 0.8 })
         );
         marker.rotation.x = -Math.PI / 2;
-        marker.position.y = wallHeight + 0.05;
+        marker.position.y = wallHeight + 10;
 
         marker.userData.root = this;
         marker.layers.set(1);
