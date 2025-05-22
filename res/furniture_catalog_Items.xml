@@ -59,6 +59,12 @@
         <GizmoType>full</GizmoType>
         <Resizable>false</Resizable>
     </CatalogItem>
+    <CatalogItem id="plant-00002" type="other">
+        <Name>Large cactus</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable>false</Resizable>
+    </CatalogItem>
     <CatalogItem id="plant-00000" type="other">
         <Name>Flowers in pot</Name>
         <RoomType>lroom</RoomType>
@@ -68,6 +74,18 @@
     <CatalogItem id="screen-00000" type="other">
         <Name>Flat screen monitor</Name>
         <RoomType>office</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable>false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="screen-00001" type="other">
+        <Name>Tv</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>full</GizmoType>
+        <Resizable>false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="screen-00002" type="other">
+        <Name>Tv without stand</Name>
+        <RoomType>lroom</RoomType>
         <GizmoType>full</GizmoType>
         <Resizable>false</Resizable>
     </CatalogItem>
@@ -100,5 +118,23 @@
         <RoomType>kitchen</RoomType>
         <GizmoType>horizontal</GizmoType>
         <Resizable>false</Resizable>
+    </CatalogItem>
+    <CatalogItem id="carpet-00000" type="other">
+        <Name>Carpet</Name>
+        <RoomType>lroom</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.5" maxZ="2">true</Resizable>
+    </CatalogItem>
+    <CatalogItem id="table-00001" type="table">
+        <Name>Kitchen desk</Name>
+        <RoomType>kitchen</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.8" maxX="2" minY="0.3" maxY="1.2" minZ="0.6" maxZ="2">true</Resizable>
+    </CatalogItem>
+    <CatalogItem id="table-00002" type="table">
+        <Name>Rounded kitchen desk</Name>
+        <RoomType>kitchen</RoomType>
+        <GizmoType>horizontal</GizmoType>
+        <Resizable minX="0.6" maxX="1.5" minY="0.3" maxY="1.2" minZ="0.6" maxZ="1.5">true</Resizable>
     </CatalogItem>
 </Catalog>
