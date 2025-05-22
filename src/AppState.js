@@ -39,7 +39,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true  });
 const cSS2DRenderer = new CSS2DRenderer({ element: document.getElementById('css2d-ui') });
 
 const NO_CULLING_LIMIT = 50;
-const cameraOrtho = new THREE.OrthographicCamera( // THREE.OrthographicCamera(left, right, top, bottom, near, far);
+const cameraOrtho = new THREE.OrthographicCamera(
     NO_CULLING_LIMIT * aspectRatio / -2,
     NO_CULLING_LIMIT * aspectRatio / 2,
     NO_CULLING_LIMIT / 2,
@@ -474,8 +474,6 @@ export class WMouse {
     onMouseRightClick(event) {
         event.preventDefault(); // disables the browsers context menu
 
-        // console.log(ObjectFilter.placedWalls); // debug only
-
         if(this.isClickSuppressed)
             return;
 
@@ -560,7 +558,7 @@ export class WMouse {
             this.startPoint.copy(point);
             this.isPlacingWall = true;
 
-            this.wallPlacingStartPoint = ThreeGeometry.CreateCylinder((AppState.sideBar.wallWidth + 0.05) / 2, AppState.sideBar.wallHeight+0.01, 0xFFFF00, point) //this.planCursor.cornerToPoint(point, AppState.sideBar.wallWidth + 0.05, AppState.sideBar.wallHeight+0.01, 0xFFFF00);
+            this.wallPlacingStartPoint = ThreeGeometry.CreateCylinder((AppState.sideBar.wallWidth + 0.05) / 2, AppState.sideBar.wallHeight+0.01, 0xFFFF00, point)
             scene.add(this.wallPlacingStartPoint);
         } else { // finalize wall placement
             const finalizedWall = this.updateWall(this.tempWallVisualizer, this.startPoint, point, true);
@@ -609,7 +607,7 @@ export class WMouse {
         if (this.newCornerPoints.length < 2) return; // need at least 2 points to form a line
 
         if (!this.newCornerPoints.at(0).equals(this.newCornerPoints.at(this.newCornerPoints.length-1))) {
-            //alert("Start and end points does not matches!");
+            //alert("Start and end points does not matches!"); // TODO: lehet atkene gondolni, hogy ne engedjem ugy lerakni a falat, hogy nem er ossze a szoba
         }
 
         const floorMesh = ThreeGeometry.createExtrudedFloor(this.newCornerPoints);

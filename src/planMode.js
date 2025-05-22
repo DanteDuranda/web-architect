@@ -42,7 +42,7 @@ export class PlanCursor {
     }
 
     createCursor() {
-        const segments = 20; // number of segments for the circle
+        const segments = 20;
 
         // center circle
         const circleGeometry = new THREE.CircleGeometry(this.radius, segments);
@@ -74,7 +74,6 @@ export class PlanCursor {
         return cursorGroup;
     }
 
-    // resize the cursor based on zoom level
     resizeCursor(zoom) {
         let cursorScale;
 
@@ -97,8 +96,8 @@ export class PlanCursor {
     }
 
     drawDebugMarker(x, y, z, scene) {
-        const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16); // Small sphere
-        const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color
+        const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+        const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 
         const marker = new THREE.Mesh(markerGeometry, markerMaterial);
 

@@ -1,7 +1,7 @@
 import {AppState, ObjectFilter} from "./AppState.js";
 
 export class SideBar {
-    static catalogItems = []; // TODO ezt elfelejtettem bekotni, most ujratolti a katalogust minden alkalommal
+    static catalogItems = [];
     static catalogItemsDOMElement = new Map();
 
     #widthInput;
@@ -211,14 +211,14 @@ export class SideBar {
         const furnitureButtons = document.querySelectorAll("#furniture-category-bt-container .room-category-button");
 
         roomButtons.forEach(button => {
-            const type = button.dataset.room; // ensure you add this attribute to your HTML
+            const type = button.dataset.room;
             if (type === this.furnitureCatalog.roomTypeFilter) {
                 button.classList.add("active");
             }
         });
 
         furnitureButtons.forEach(button => {
-            const type = button.dataset.category; // ensure this attribute too
+            const type = button.dataset.category;
             if (type === this.furnitureCatalog.furnitureTypeFilter) {
                 button.classList.add("active");
             }
@@ -515,31 +515,5 @@ class FurnitureCatalog extends Catalog {
         label.textContent = "Oops.\nWe could not fetch the furniture catalog!";
 
         return label;
-    }
-}
-
-class WinDoorCatalog extends Catalog { // maybe DEPRECATED
-    async loadCatalogItems() {
-        throw new Error("");
-    }
-
-    filterItems() {
-        throw new Error("");
-    }
-
-    setFilters(roomTypeFilter, furnitureTypeFilter, clickedButton) {
-        throw new Error("");
-    }
-
-    toggleActive(clickedButton, buttonGroup) {
-        throw new Error("");
-    }
-
-    createElement(catalogItem) {
-        throw new Error("");
-    }
-
-    failResponse() {
-        throw new Error("");
     }
 }

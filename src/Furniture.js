@@ -160,7 +160,7 @@ class Furniture extends WObject {
         this.add(wireframe);
     }
 
-    handleAttachDetach(attachState) // TODO: igy mar lehet ez itt tulzas, de hatha irni kell ide meg valamit
+    handleAttachDetach(attachState)
     {
         this.toggleHighlight(attachState);
     }
@@ -185,7 +185,6 @@ class Furniture extends WObject {
         //newDims.Y = Math.min(limits.maxY, Math.max(limits.minY, newDims.Y));
         newDims.Z = Math.min(limits.maxZ, Math.max(limits.minZ, newDims.Z));
 
-        // apply new scale to match clamped dims
         this.scale.x = newDims.X / this.originalDimensions.X;
         this.scale.y = newDims.Y / this.originalDimensions.Y;
         this.scale.z = newDims.Z / this.originalDimensions.Z;

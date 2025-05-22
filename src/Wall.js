@@ -251,10 +251,10 @@ class Wall extends WObject {
         const midpoint = new THREE.Vector3().addVectors(this.p1, this.p2).multiplyScalar(0.5);
 
         windoor.position.copy(midpoint);
-        windoor.position.y = this.wallGeometry.scale.y; // Adjust vertical center if needed
+        windoor.position.y = this.wallGeometry.scale.y;
 
         const angle = Math.atan2(direction.z, direction.x); // rotate around y
-        windoor.rotation.y = -angle; // negative because threejs uses lefthanded system for z
+        windoor.rotation.y = -angle; // threejs uses lefthanded system for z
 
         this.userData.winDoors.push(windoor);
         this.add(windoor);
