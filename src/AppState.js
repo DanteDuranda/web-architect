@@ -89,6 +89,7 @@ function InitResources() {
     cameraOrtho.layers.enable(0);
     cameraOrtho.layers.enable(1);
     cameraOrtho.layers.enable(2);
+    cameraOrtho.layers.enable(3);
 
     cameraPersp.position.set(10, 10, 10);
     cameraPersp.lookAt(0, 0, 0);

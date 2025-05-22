@@ -105,22 +105,20 @@ class Wall extends WObject {
 
         this.layerColors.set(layerKey, color);
 
-        for (const index of vertices) { // wall
-            if (typeof index === 'number') {
+        for (const index of vertices) {
+            if (typeof index === 'number') { // wall
                 if (!colorAttr)
                     continue;
 
                 colorAttr.setXYZ(index, color.r, color.g, color.b);
                 colorAttr.needsUpdate = true;
 
-            } else if (typeof index === 'string' && index.startsWith('corner')) { // corners || pointIndicators
+            } else if (typeof index === 'string' && index.startsWith('corner')) { // pointIndicators
                 const [cornerId, vertIndexStr] = index.split('_');
                 const cornerIndex = parseInt(cornerId.replace('corner', ''));
                 const vertIndex = parseInt(vertIndexStr);
 
-                const indicator = this.pointIndicators[cornerIndex];
-
-                const colorAttr = indicator.geometry.attributes.color;
+                const colorAttr = this.pointIndicators[cornerIndex].geometry.attributes.color;
                 colorAttr.setXYZ(vertIndex, color.r, color.g, color.b);
                 colorAttr.needsUpdate = true;
             }
@@ -420,7 +418,7 @@ class Wall extends WObject {
         this.add(planeHelper);
     }
 
-    #placeVertexVisualizer(position, color = 0x000000, size = 0.02) {
+    #placeVertexVisualizer(position, color, size = 0.02) {
         const indicator = ThreeGeometry.CreateCube(size, size, size, color);
         indicator.position.copy(position);
         this.add(indicator);
