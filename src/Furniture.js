@@ -182,7 +182,7 @@ class Furniture extends WObject {
 
         // clamp to limits (in meters)
         newDims.X = Math.min(limits.maxX, Math.max(limits.minX, newDims.X));
-        newDims.Y = Math.min(limits.maxY, Math.max(limits.minY, newDims.Y));
+        //newDims.Y = Math.min(limits.maxY, Math.max(limits.minY, newDims.Y));
         newDims.Z = Math.min(limits.maxZ, Math.max(limits.minZ, newDims.Z));
 
         // apply new scale to match clamped dims
