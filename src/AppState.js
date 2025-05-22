@@ -71,7 +71,7 @@ function InitResources() {
 
     gridHelperCm = new THREE.GridHelper(50, 5000, 0x232526, 0x556677);
 
-    let hemisphereLMain = new THREE.HemisphereLight(0xffffff, 0xB97A20, 1);
+    let hemisphereLMain = new THREE.HemisphereLight(0xffffff, 0x999999, 1);
     scene.add(hemisphereLMain);
 
     /*const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
